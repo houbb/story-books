@@ -9,7 +9,7 @@ declare module 'page-flip' {
   export interface PageFlipSettings {
     width: number;
     height: number;
-    size?: { width: number; height: number };
+    size?: 'fixed' | 'stretch';
     render?: PageRender;
     showCover?: boolean;
     usePortrait?: boolean;

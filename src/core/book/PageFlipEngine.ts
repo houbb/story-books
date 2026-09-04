@@ -34,11 +34,10 @@ export function baseFlipSettings(
   height: number,
   isMobile: boolean
 ): PageFlipSettings {
-  const size = { width, height };
   return {
     width,
     height,
-    size,
+    size: 'fixed',
     showCover: true,
     autoSize: true,
     usePortrait: isMobile,
