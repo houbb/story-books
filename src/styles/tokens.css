@@ -16,8 +16,8 @@
   --shadow-deep: 0 18px 60px rgba(36, 33, 28, 0.18);
 
   /* Typography */
-  --font-serif-en: 'Cormorant Garamond', 'EB Garamond', 'Noto Serif SC', serif;
-  --font-serif-cn: 'Noto Serif SC', 'Cormorant Garamond', serif;
+  --font-serif-en: 'Cormorant Garamond', 'EB Garamond', 'LXGW WenKai Screen', serif;
+  --font-serif-cn: 'LXGW WenKai Screen', 'Noto Serif SC', 'Cormorant Garamond', serif;
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
   --text-xs: 11px;

@@ -1,14 +1,17 @@
 /**
- * MarkdownRenderer — turns Markdown content into sanitized HTML.
- * Wraps markdown-it with a curated, project-specific feature set.
+ * MarkdownRenderer — turns Markdown into HTML for the Reader.
+ *
+ * The Reader passes the rendered HTML into page-flip's HTML mode. We do not
+ * compile Markdown into Vue components — StoryDocument is the contract.
  */
 
 import MarkdownIt from 'markdown-it';
 import type { StoryMeta } from '../story/types';
 
-export interface RenderOptions {
-  /** Base path to resolve relative image links like ./images/foo.jpg */
-  basePath: string;
+export interface RenderResult {
+  html: string;
+  /** Approximate excerpt shown on covers / TOC previews */
+  excerpt: string;
 }
 
 const md = new MarkdownIt({
@@ -22,10 +25,35 @@ const md = new MarkdownIt({
 
 md.enable(['smartquotes', 'replacements', 'linkify']);
 
+/** Replace the leading `# Title` if frontmatter already supplies one. */
+function stripLeadingH1(content: string, title?: string): string {
+  if (!title) return content;
+  const lines = content.split('\n');
+  let i = 0;
+  while (i < lines.length && lines[i].trim() === '') i++;
+  if (i < lines.length && /^#\s+/.test(lines[i])) {
+    lines.splice(i, 1);
+  }
+  return lines.join('\n').trim();
+}
+
+function makeExcerpt(content: string, max = 80): string {
+  const text = content
+    .replace(/^---[\s\S]*?---/, '')
+    .replace(/^#+\s+.*$/gm, '')
+    .replace(/!\[[^\]]*\]\([^)]+\)/g, '')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/[*_`>#-]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return text.length > max ? text.slice(0, max) + '…' : text;
+}
+
 export class MarkdownRenderer {
-  render(story: StoryMeta): string {
-    const env: RenderOptions = { basePath: story.path };
-    return md.render(story.content, env as unknown as MarkdownIt.Options);
+  render(story: StoryMeta): RenderResult {
+    const body = stripLeadingH1(story.content, story.title);
+    const html = md.render(body);
+    return { html, excerpt: makeExcerpt(story.content) };
   }
 }
 

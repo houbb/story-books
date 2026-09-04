@@ -78,7 +78,7 @@ export function flattenStories(roots: StoryDocument[]): StoryMeta[] {
   const out: StoryMeta[] = [];
   for (const r of roots) {
     if (isStoryGroup(r)) {
-      out.push(...r.children);
+      out.push(...flattenStories(r.children));
     } else {
       out.push(r);
     }

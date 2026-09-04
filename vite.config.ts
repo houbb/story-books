@@ -13,4 +13,6 @@ export default defineConfig({
     port: 5173,
     host: true,
   },
+  // Allow import.meta.glob('/stories/**') — stories live at the project root.
+  assetsInclude: ['**/*.md'],
 });

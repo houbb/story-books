@@ -1,0 +1,467 @@
+/* ============================================================
+   Page — typography for SSR-rendered flip pages.
+   Pages live inside .stf__item and have no Vue scoping, so all
+   selectors here use plain class names.
+   ============================================================ */
+
+.book-page {
+  width: 100%;
+  height: 100%;
+  background: var(--bg-paper);
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  font-family: var(--font-serif-cn);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ---------------- Cover ---------------- */
+.book-cover {
+  align-items: center;
+  justify-content: center;
+  padding: 14% 12%;
+  background:
+    radial-gradient(ellipse at 50% 18%, rgba(200, 168, 120, 0.18), transparent 55%),
+    var(--bg-paper);
+  text-align: center;
+}
+.book-cover__frame {
+  position: absolute;
+  inset: 6% 6%;
+  border: 1px solid var(--border);
+  pointer-events: none;
+}
+.book-cover__frame::before,
+.book-cover__frame::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 36%;
+  height: 1px;
+  background: var(--accent-soft);
+  opacity: 0.6;
+}
+.book-cover__frame::before {
+  top: -1px;
+}
+.book-cover__frame::after {
+  bottom: -1px;
+}
+.book-cover__eyebrow {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 32px;
+}
+.book-cover__title {
+  font-family: var(--font-serif-en);
+  font-size: clamp(38px, 5vw, 72px);
+  margin: 0 0 16px;
+  letter-spacing: 0.05em;
+  line-height: 1.04;
+  color: var(--ink);
+  animation: ink-bleed var(--dur-slow) var(--ease-paper) both;
+}
+.book-cover__rule {
+  width: 96px;
+  height: 1px;
+  background: var(--accent);
+  margin: 24px auto;
+  opacity: 0.7;
+}
+.book-cover__subtitle {
+  font-family: var(--font-serif-cn);
+  font-size: clamp(16px, 1.6vw, 20px);
+  color: var(--ink-soft);
+  letter-spacing: 0.32em;
+  margin: 0;
+}
+.book-cover__author {
+  font-family: var(--font-serif-en);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--muted);
+  margin-top: 32px;
+}
+.book-cover__ornament {
+  margin-top: 24px;
+  color: var(--accent);
+  font-size: 18px;
+}
+
+/* ---------------- Index ---------------- */
+.book-index {
+  padding: 10% 9% 8%;
+  display: flex;
+  flex-direction: column;
+}
+.book-index__title {
+  font-family: var(--font-serif-en);
+  font-size: 28px;
+  letter-spacing: 0.42em;
+  text-align: center;
+  margin: 0 0 8px;
+  color: var(--ink);
+}
+.book-index__rule {
+  height: 1px;
+  width: 64px;
+  background: var(--accent);
+  margin: 0 auto 24px;
+  opacity: 0.6;
+}
+.book-index__list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow: hidden;
+}
+.idx-group {
+  margin-bottom: 18px;
+}
+.idx-group__head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 4px 0 8px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 10px;
+}
+.idx-group__rule {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, var(--border), transparent);
+}
+.idx-group__name {
+  font-family: var(--font-serif-en);
+  font-size: 13px;
+  letter-spacing: 0.32em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.idx-item {
+  display: grid;
+  grid-template-columns: 36px 1fr 60px;
+  align-items: baseline;
+  padding: 8px 4px;
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-out);
+  color: var(--ink-soft);
+}
+.idx-item:hover {
+  color: var(--accent);
+}
+.idx-item__no {
+  font-family: var(--font-serif-en);
+  font-size: 13px;
+  color: var(--muted);
+}
+.idx-item__title {
+  font-family: var(--font-serif-cn);
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+}
+.idx-item__sub {
+  grid-column: 2 / 3;
+  font-family: var(--font-serif-en);
+  font-style: italic;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.idx-item__page {
+  text-align: right;
+  font-family: var(--font-serif-en);
+  font-size: 13px;
+  color: var(--muted);
+}
+.idx-leaf {
+  display: block;
+  padding: 8px 4px;
+  cursor: pointer;
+  border-bottom: 1px dotted var(--border);
+  color: var(--ink-soft);
+}
+.idx-leaf:hover {
+  color: var(--accent);
+}
+.idx-leaf__no {
+  font-family: var(--font-serif-en);
+  font-size: 13px;
+  color: var(--muted);
+  margin-right: 16px;
+}
+.idx-leaf__title {
+  font-family: var(--font-serif-cn);
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+}
+
+/* ---------------- Story Cover ---------------- */
+.story-cover {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 14% 12%;
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(139, 107, 61, 0.06), transparent 60%),
+    var(--bg-paper);
+}
+.story-cover__no {
+  font-family: var(--font-serif-en);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--muted);
+  letter-spacing: 0.18em;
+}
+.story-cover__rule {
+  width: 64px;
+  height: 1px;
+  background: var(--accent);
+  margin: 24px auto;
+  opacity: 0.7;
+}
+.story-cover__title {
+  font-family: var(--font-serif-cn);
+  font-size: clamp(34px, 4.2vw, 56px);
+  letter-spacing: 0.18em;
+  margin: 0;
+  color: var(--ink);
+  font-weight: 600;
+  animation: ink-bleed var(--dur-slow) var(--ease-paper) both;
+}
+.story-cover__subtitle {
+  font-family: var(--font-serif-en);
+  font-size: clamp(14px, 1.4vw, 18px);
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 16px;
+}
+.story-cover__excerpt {
+  font-family: var(--font-serif-en);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 32px;
+  max-width: 70%;
+  line-height: 1.7;
+}
+.story-cover__ornament {
+  margin-top: 36px;
+  font-family: var(--font-serif-en);
+  color: var(--accent);
+  letter-spacing: 1em;
+}
+.story-cover__hint {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-serif-en);
+  font-style: italic;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ---------------- Content ---------------- */
+.content-page {
+  padding: 8% 9% 7%;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.content-page__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+  margin-bottom: 24px;
+}
+.content-page__breadcrumb {
+  font-family: var(--font-serif-en);
+  font-size: 12px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.content-page__page-no {
+  font-family: var(--font-serif-en);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--muted);
+}
+.content-page__body {
+  flex: 1;
+  overflow: hidden;
+  font-family: var(--font-serif-cn);
+  font-size: 15px;
+  line-height: 1.95;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+}
+.content-page__body h1,
+.content-page__body h2,
+.content-page__body h3 {
+  font-family: var(--font-serif-cn);
+  color: var(--ink);
+  margin: 1.4em 0 0.6em;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+.content-page__body h1 {
+  font-size: 22px;
+}
+.content-page__body h2 {
+  font-size: 18px;
+}
+.content-page__body p {
+  margin: 0 0 0.95em;
+  text-indent: 2em;
+}
+.content-page__body blockquote {
+  margin: 1.5em 0;
+  padding: 0.5em 1.4em;
+  border-left: 2px solid var(--accent);
+  color: var(--ink);
+  font-style: italic;
+  background: rgba(139, 107, 61, 0.05);
+}
+.content-page__body strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+.content-page__body em {
+  font-style: italic;
+  color: var(--ink);
+}
+.content-page__body ul,
+.content-page__body ol {
+  margin: 0 0 1em;
+  padding-left: 2.4em;
+}
+.content-page__body li {
+  margin: 0.3em 0;
+}
+.content-page__body hr {
+  border: none;
+  height: 1px;
+  background: var(--border);
+  margin: 2em auto;
+  width: 60%;
+}
+.content-page__body code {
+  font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+  font-size: 0.88em;
+  padding: 0.12em 0.36em;
+  background: var(--bg-paper-deep);
+  border-radius: 4px;
+}
+.content-page__body img {
+  display: block;
+  max-width: 100%;
+  margin: 1.6em auto;
+  border-radius: 6px;
+  box-shadow: var(--shadow);
+}
+.content-page__foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+  margin-top: 24px;
+}
+.content-page__nav {
+  font-family: var(--font-serif-en);
+  font-size: 13px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.content-page__nav--prev::before {
+  content: '← ';
+}
+.content-page__nav--next::after {
+  content: ' →';
+}
+.content-page__ornament {
+  font-family: var(--font-serif-en);
+  color: var(--accent);
+  letter-spacing: 0.5em;
+  font-size: 12px;
+}
+
+/* ---------------- Ending ---------------- */
+.story-ending {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 14% 12%;
+  background:
+    radial-gradient(ellipse at 50% 80%, rgba(139, 107, 61, 0.06), transparent 60%),
+    var(--bg-paper);
+}
+.story-ending__ornament {
+  font-size: 18px;
+  color: var(--accent);
+  margin-bottom: 32px;
+  letter-spacing: 0.6em;
+}
+.story-ending__title {
+  font-family: var(--font-serif-en);
+  font-size: clamp(28px, 3vw, 40px);
+  letter-spacing: 0.36em;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin: 0;
+}
+.story-ending__rule {
+  width: 64px;
+  height: 1px;
+  background: var(--accent);
+  margin: 24px auto;
+  opacity: 0.7;
+}
+.story-ending__subtitle {
+  font-family: var(--font-serif-cn);
+  font-size: 18px;
+  color: var(--muted);
+  letter-spacing: 0.32em;
+  margin: 16px 0 0;
+}
+.story-ending__hint {
+  position: absolute;
+  bottom: 36px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-serif-en);
+  font-style: italic;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ---------------- Night theme ---------------- */
+[data-theme='night'] .book-page {
+  background: var(--bg-paper);
+  color: var(--ink);
+}
+[data-theme='night'] .book-cover,
+[data-theme='night'] .story-cover,
+[data-theme='night'] .story-ending {
+  background: var(--bg-paper);
+}
+[data-theme='night'] .content-page__body {
+  color: var(--ink-soft);
+}

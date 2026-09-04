@@ -52,6 +52,21 @@ order: 1
 
 放任意 `stories/**` 子目录下即可，前端会自动出现在目录与故事树中。
 
+## 测试与验证
+
+```bash
+pnpm test       # Story Engine 单元断言
+pnpm test:e2e   # Playwright 真实浏览器流程
+pnpm typecheck  # Vue + TypeScript 类型检查
+pnpm build      # 生产构建
+```
+
+> E2E 会启动本地 Vite 服务，并模拟真实用户点击、主题切换和配乐播放。首次运行需要准备 Playwright 浏览器。
+
+## 柔和配乐
+
+首页和阅读器右上角提供 `sound off / sound on` 控制。配乐是项目内置的原创短循环环境音，默认静音；只有用户主动点击后才会播放，适合阅读时作为轻柔背景，不依赖外部音乐服务。
+
 ## 技术栈
 
 Vue 3 · TypeScript · Vite · Pinia · Vue Router · markdown-it · page-flip · Vue Flow · VueUse · Google Fonts
