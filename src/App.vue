@@ -2,21 +2,32 @@
 import { onMounted, watch } from 'vue';
 import { useSettingsStore } from '@/stores/settings';
 import { useStoryStore } from '@/stores/story';
+import SearchFab from '@/components/SearchFab.vue';
 
 const settings = useSettingsStore();
 const story = useStoryStore();
 
-// Apply theme on first paint and whenever it changes
+function applyDocumentState() {
+  const root = document.documentElement;
+  root.dataset.theme = settings.theme;
+  root.dataset.cjkFont = settings.cjkFont;
+  root.dataset.latinFont = settings.latinFont;
+  root.dataset.fontSize = String(settings.fontSize);
+}
+
 onMounted(() => {
-  document.documentElement.dataset.theme = settings.theme;
+  applyDocumentState();
   story.load();
 });
 
 watch(
-  () => settings.theme,
-  (t) => {
-    document.documentElement.dataset.theme = t;
-  }
+  () => [
+    settings.theme,
+    settings.cjkFont,
+    settings.latinFont,
+    settings.fontSize,
+  ],
+  () => applyDocumentState()
 );
 </script>
 
@@ -26,6 +37,7 @@ watch(
       <component :is="Component" />
     </transition>
   </RouterView>
+  <SearchFab />
 </template>
 
 <style>

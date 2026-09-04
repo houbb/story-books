@@ -14,5 +14,18 @@ export default defineConfig({
     reuseExistingServer: true,
     timeout: 120_000,
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    {
+      name: 'chromium',
+      use: {
+        ...devices['Desktop Chrome'],
+        launchOptions: {
+          // macOS 13 hosts don't ship the headless shell that `playwright install`
+          // expects. Fall back to the locally-installed Google Chrome so the
+          // suite still runs end-to-end.
+          channel: 'chrome',
+        },
+      },
+    },
+  ],
 });

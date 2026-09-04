@@ -1,11 +1,14 @@
 /**
  * settings — persisted user preferences.
- * theme / fontSize / last position (resume reading).
+ * theme / font family / font size / last position (resume reading).
  */
 
 import { defineStore } from 'pinia';
 
 export type ThemeMode = 'light' | 'night';
+
+export type CjkFont = 'wenkai' | 'noto' | 'songti';
+export type LatinFont = 'cormorant' | 'inter' | 'georgia';
 
 export interface ReadingPosition {
   storyId: string | null;
@@ -20,6 +23,8 @@ const MAX_POSITIONS = 50;
 export interface SettingsState {
   theme: ThemeMode;
   fontSize: number;
+  cjkFont: CjkFont;
+  latinFont: LatinFont;
   lastPosition: ReadingPosition | null;
   /** storyId → last page, most recent first */
   history: ReadingPosition[];
@@ -30,7 +35,8 @@ function load(): SettingsState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return defaults();
-    return { ...defaults(), ...(JSON.parse(raw) as Partial<SettingsState>) };
+    const parsed = JSON.parse(raw) as Partial<SettingsState>;
+    return { ...defaults(), ...parsed };
   } catch {
     return defaults();
   }
@@ -40,6 +46,8 @@ function defaults(): SettingsState {
   return {
     theme: 'light',
     fontSize: 15,
+    cjkFont: 'wenkai',
+    latinFont: 'cormorant',
     lastPosition: null,
     history: [],
     soundEnabled: false,
@@ -53,6 +61,8 @@ function save(state: SettingsState) {
       JSON.stringify({
         theme: state.theme,
         fontSize: state.fontSize,
+        cjkFont: state.cjkFont,
+        latinFont: state.latinFont,
         lastPosition: state.lastPosition,
         history: state.history,
         soundEnabled: state.soundEnabled,
@@ -76,6 +86,14 @@ export const useSettingsStore = defineStore('settings', {
     },
     setFontSize(size: number) {
       this.fontSize = Math.min(20, Math.max(13, size));
+      save(this.$state);
+    },
+    setCjkFont(font: CjkFont) {
+      this.cjkFont = font;
+      save(this.$state);
+    },
+    setLatinFont(font: LatinFont) {
+      this.latinFont = font;
       save(this.$state);
     },
     recordReading(storyId: string | null, page: number) {

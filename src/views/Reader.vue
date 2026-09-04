@@ -147,12 +147,20 @@ async function mountFlip() {
 
   const resume = settings.lastPosition;
   const requestedPage = Number(route.query.page);
+  const requestedStory = typeof route.query.story === 'string' ? route.query.story : null;
+  const storyIdx =
+    requestedStory && index.value?.byId[requestedStory]
+      ? index.value.stories.findIndex((s) => s.id === requestedStory)
+      : -1;
+  const hasRequestedStory = storyIdx >= 0;
   const hasRequestedPage = Number.isInteger(requestedPage) && requestedPage >= 0;
   const start = hasRequestedPage
     ? Math.min(requestedPage, tpls.length - 1)
-    : resume && resume.storyId && index.value?.byId[resume.storyId] && resume.page >= 0
-      ? Math.min(resume.page, tpls.length - 1)
-      : 0;
+    : hasRequestedStory
+      ? Math.min(storyIdx * 2 + 2, tpls.length - 1)
+      : resume && resume.storyId && index.value?.byId[resume.storyId] && resume.page >= 0
+        ? Math.min(resume.page, tpls.length - 1)
+        : 0;
   flip.turnToPage(start);
   syncCurrent(start);
   book.open();
@@ -189,7 +197,10 @@ function onKey(e: KeyboardEvent) {
     else exit();
   } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
     e.preventDefault();
-    book.setShowStoryMap(!book.showStoryMap);
+    router.push('/search');
+  } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'm') {
+    e.preventDefault();
+    router.push('/map');
   } else if (e.key === 'Home') {
     flip?.turnToPage(0);
   } else if (e.key === 'End') {

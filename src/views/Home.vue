@@ -5,6 +5,8 @@ import { storeToRefs } from 'pinia';
 import { useStoryStore } from '@/stores/story';
 import { useSettingsStore } from '@/stores/settings';
 import { useAmbientAudio } from '@/composables/useAmbientAudio';
+import { storyStatsProvider } from '@/core/story/StoryStats';
+import SettingsPanel from '@/components/reader/SettingsPanel.vue';
 
 const router = useRouter();
 const story = useStoryStore();
@@ -14,6 +16,7 @@ const { lastPosition, theme } = storeToRefs(settings);
 const { playing: musicPlaying, toggle: toggleMusic } = useAmbientAudio();
 
 const ready = ref(false);
+const settingsPanel = ref(false);
 
 onMounted(async () => {
   await story.load();
@@ -26,6 +29,11 @@ const bookSubtitle = computed(
 );
 const storyCount = computed(() => index.value?.totalStories ?? 0);
 
+const totalWords = computed(() => {
+  if (!index.value) return 0;
+  return storyStatsProvider.compute(index.value.stories).totalWords;
+});
+
 const resume = computed(() => {
   const pos = lastPosition.value;
   if (!pos || !pos.storyId) return null;
@@ -36,6 +44,18 @@ const resume = computed(() => {
 function enter() {
   router.push('/read');
 }
+function gotoMap() {
+  router.push('/map');
+}
+function gotoStats() {
+  router.push('/stats');
+}
+function gotoSearch() {
+  router.push('/search');
+}
+function gotoSettings() {
+  settingsPanel.value = true;
+}
 </script>
 
 <template>
@@ -44,14 +64,22 @@ function enter() {
 
     <header class="home__top">
       <span class="eyebrow">{{ bookTitle }}</span>
-      <button class="home__theme" :aria-label="`切换到${theme === 'light' ? '夜间' : '日间'}模式`" @click="settings.toggleTheme()">
-        <span v-if="theme === 'light'">☾</span>
-        <span v-else>☼</span>
-      </button>
-      <button class="home__music" :aria-label="musicPlaying ? '暂停配乐' : '播放配乐'" @click="toggleMusic">
-        <span class="home__music-bars" :class="{ 'is-playing': musicPlaying }"><i /><i /><i /></span>
-        <span>{{ musicPlaying ? 'sound on' : 'sound off' }}</span>
-      </button>
+      <div class="home__top-actions">
+        <button class="home__icon" :aria-label="`切换到${theme === 'light' ? '夜间' : '日间'}模式`" @click="settings.toggleTheme()">
+          <span v-if="theme === 'light'">☾</span>
+          <span v-else>☼</span>
+        </button>
+        <button class="home__icon" aria-label="进入全文检索" title="全文检索 (⌘K)" @click="gotoSearch">
+          <span>⌕</span>
+        </button>
+        <button class="home__icon" aria-label="打开阅读偏好" title="阅读偏好" @click="gotoSettings">
+          <span>Aa</span>
+        </button>
+        <button class="home__music" :aria-label="musicPlaying ? '暂停配乐' : '播放配乐'" @click="toggleMusic">
+          <span class="home__music-bars" :class="{ 'is-playing': musicPlaying }"><i /><i /><i /></span>
+          <span>{{ musicPlaying ? 'sound on' : 'sound off' }}</span>
+        </button>
+      </div>
     </header>
 
     <main class="home__stage">
@@ -67,11 +95,31 @@ function enter() {
         </p>
       </div>
 
-      <button class="home__cta" :disabled="!ready" @click="enter">
-        <span class="home__cta-eyebrow eyebrow">Open the Book</span>
-        <span class="home__cta-line" />
-        <span class="home__cta-count">{{ storyCount }} stories</span>
-      </button>
+      <div class="home__primary fade-up">
+        <button class="home__cta" :disabled="!ready" @click="enter">
+          <span class="home__cta-eyebrow eyebrow">Open the Book</span>
+          <span class="home__cta-line" />
+          <span class="home__cta-count">{{ storyCount }} stories · {{ totalWords.toLocaleString('en-US') }} 字</span>
+        </button>
+
+        <nav class="home__shortcuts" aria-label="花园入口">
+          <button class="home__shortcut home__shortcut--map" @click="gotoMap">
+            <span class="home__shortcut-icon">✺</span>
+            <span class="home__shortcut-name">故事地图</span>
+            <span class="home__shortcut-sub">Story Map · ⌘M</span>
+          </button>
+          <button class="home__shortcut home__shortcut--stats" @click="gotoStats">
+            <span class="home__shortcut-icon">∑</span>
+            <span class="home__shortcut-name">字数汇总</span>
+            <span class="home__shortcut-sub">Stats · 排行榜 / 阅读时间</span>
+          </button>
+          <button class="home__shortcut home__shortcut--search" @click="gotoSearch">
+            <span class="home__shortcut-icon">⌕</span>
+            <span class="home__shortcut-name">全文检索</span>
+            <span class="home__shortcut-sub">Search · ⌘K</span>
+          </button>
+        </nav>
+      </div>
 
       <transition name="resume">
         <div v-if="resume" class="home__resume" @click="enter">
@@ -89,6 +137,12 @@ function enter() {
 
     <p v-if="loading" class="home__loading caption">Loading stories…</p>
     <p v-if="error" class="home__error caption">{{ error }}</p>
+
+    <transition name="settings">
+      <div v-if="settingsPanel" class="home__settings-mask" @click.self="settingsPanel = false">
+        <SettingsPanel @close="settingsPanel = false" />
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -115,7 +169,12 @@ function enter() {
   justify-content: space-between;
   color: var(--muted);
 }
-.home__theme {
+.home__top-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.home__icon {
   width: 32px;
   height: 32px;
   border-radius: var(--radius-pill);
@@ -125,7 +184,7 @@ function enter() {
   color: var(--ink-soft);
   transition: background var(--dur-fast) var(--ease-out);
 }
-.home__theme:hover {
+.home__icon:hover {
   background: var(--bg-paper-deep);
 }
 .home__music {
@@ -167,7 +226,7 @@ function enter() {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 56px;
+  gap: 40px;
   text-align: center;
   padding: 24px;
 }
@@ -199,6 +258,12 @@ function enter() {
 .home__caption {
   margin: 0;
   max-width: 480px;
+}
+.home__primary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
 }
 .home__cta {
   position: relative;
@@ -240,6 +305,69 @@ function enter() {
   font-style: italic;
   font-size: 13px;
   color: var(--muted);
+}
+.home__shortcuts {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.home__shortcut {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 16px 20px;
+  min-width: 168px;
+  border-radius: var(--radius-md);
+  background: var(--bg-paper);
+  border: 1px solid var(--border);
+  transition: border-color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-mid) var(--ease-out);
+  text-align: left;
+}
+.home__shortcut:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+.home__shortcut-icon {
+  font-family: var(--font-serif-en);
+  font-size: 22px;
+  color: var(--accent);
+  line-height: 1;
+}
+.home__shortcut-name {
+  font-family: var(--font-serif-cn);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+}
+.home__shortcut-sub {
+  font-family: var(--font-serif-en);
+  font-style: italic;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.12em;
+}
+.home__settings-mask {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(36, 33, 28, 0.32);
+  backdrop-filter: blur(6px);
+  z-index: 100;
+}
+.settings-enter-active,
+.settings-leave-active {
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+.settings-enter-from,
+.settings-leave-to {
+  opacity: 0;
 }
 .home__resume {
   margin-top: 8px;

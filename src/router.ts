@@ -1,12 +1,13 @@
-/**
- * Router — three surfaces:
- *   /                  Home (book cover entry)
- *   /read              Book reader (cover, contents, stories, ending)
- *   /map               Standalone Story Map (full screen)
- */
-
 import { createRouter, createWebHashHistory, type RouteRecordRaw } from 'vue-router';
 
+/**
+ * Router — surfaces:
+ *   /          Home (book cover entry)
+ *   /read      Book reader (cover, contents, stories, ending)
+ *   /map       Standalone Story Map
+ *   /stats     Word-count dashboard (per story + aggregate)
+ *   /search    Full-text search results (?q=…)
+ */
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
@@ -22,6 +23,16 @@ const routes: RouteRecordRaw[] = [
     path: '/map',
     name: 'map',
     component: () => import('@/views/StoryMapView.vue'),
+  },
+  {
+    path: '/stats',
+    name: 'stats',
+    component: () => import('@/views/StatsView.vue'),
+  },
+  {
+    path: '/search',
+    name: 'search',
+    component: () => import('@/views/SearchView.vue'),
   },
   {
     path: '/:pathMatch(.*)*',

@@ -37,6 +37,17 @@ function extractLeadingTitle(content: string): string | undefined {
   return match?.[1]?.trim();
 }
 
+export function stripLeadingH1(content: string, title?: string): string {
+  if (!title) return content;
+  const lines = content.split('\n');
+  let i = 0;
+  while (i < lines.length && lines[i].trim() === '') i++;
+  if (i < lines.length && /^#\s+/.test(lines[i])) {
+    lines.splice(i, 1);
+  }
+  return lines.join('\n').trim();
+}
+
 function fileBaseName(path: string): string {
   const base = path.split('/').pop() ?? path;
   return base.replace(/\.md$/i, '');
