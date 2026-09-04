@@ -36,6 +36,8 @@ export const useStoryStore = defineStore('story', {
       try {
         this.index = await storyIndexBuilder.build();
       } catch (e) {
+        // Keep the full error in console so browser debugging can locate the root cause.
+        console.error('[story] Failed to build story index:', e);
         this.error = e instanceof Error ? e.message : String(e);
       } finally {
         this.loading = false;

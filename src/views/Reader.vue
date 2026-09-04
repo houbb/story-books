@@ -123,7 +123,8 @@ async function mountFlip() {
   flip = new PageFlip(flipEl.value, {
     width,
     height,
-    size: { width, height },
+    // page-flip only accepts 'fixed' | 'stretch'; we compute width/height ourselves.
+    size: 'fixed',
     showCover: true,
     autoSize: false,
     usePortrait: isMobile,
