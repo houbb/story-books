@@ -1,0 +1,142 @@
+/* ============================================================
+   Theme Tokens — Editorial + Paper + Cinematic + Minimal
+   ============================================================ */
+:root {
+  /* Day (Warm Ivory) */
+  --bg-base: #e9e4da;
+  --bg-paper: #f8f4ea;
+  --bg-paper-deep: #f1eadc;
+  --ink: #24211c;
+  --ink-soft: #4b463d;
+  --muted: #777066;
+  --border: #d6cec0;
+  --accent: #8b6b3d;
+  --accent-soft: #c8a878;
+  --shadow: 0 6px 24px rgba(36, 33, 28, 0.08);
+  --shadow-deep: 0 18px 60px rgba(36, 33, 28, 0.18);
+
+  /* Typography */
+  --font-serif-en: 'Cormorant Garamond', 'EB Garamond', 'Noto Serif SC', serif;
+  --font-serif-cn: 'Noto Serif SC', 'Cormorant Garamond', serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-md: 17px;
+  --text-lg: 22px;
+  --text-xl: 32px;
+  --text-2xl: 48px;
+  --text-3xl: 64px;
+
+  /* Layout */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 18px;
+  --radius-pill: 999px;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-paper: cubic-bezier(0.86, 0, 0.07, 1);
+  --dur-fast: 220ms;
+  --dur-mid: 420ms;
+  --dur-slow: 720ms;
+
+  color-scheme: light;
+}
+
+[data-theme='night'] {
+  --bg-base: #11110f;
+  --bg-paper: #1d1c19;
+  --bg-paper-deep: #161512;
+  --ink: #e8e1d5;
+  --ink-soft: #c2b9a7;
+  --muted: #918a7d;
+  --border: #2e2c27;
+  --accent: #c8a878;
+  --accent-soft: #6e5a3c;
+  --shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+  --shadow-deep: 0 18px 60px rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  background: var(--bg-base);
+  color: var(--ink);
+  font-family: var(--font-serif-cn);
+  font-size: var(--text-base);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  transition: background-color var(--dur-mid) var(--ease-out),
+    color var(--dur-mid) var(--ease-out);
+}
+
+body {
+  overflow: hidden;
+}
+
+button {
+  font-family: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--bg-paper);
+}
+
+/* Subtle paper grain overlay */
+.paper-grain {
+  position: relative;
+}
+.paper-grain::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(36, 33, 28, 0.025) 1px, transparent 1px);
+  background-size: 3px 3px;
+  mix-blend-mode: multiply;
+  opacity: 0.6;
+}
+[data-theme='night'] .paper-grain::before {
+  background-image: radial-gradient(rgba(232, 225, 213, 0.04) 1px, transparent 1px);
+  mix-blend-mode: screen;
+}
+
+/* Generic fade-in */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-up {
+  animation: fade-up var(--dur-slow) var(--ease-out) both;
+}

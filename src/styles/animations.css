@@ -1,0 +1,56 @@
+/* ============================================================
+   Animations — restrained, paper-like motion
+   ============================================================ */
+@keyframes book-opening {
+  0% {
+    transform: perspective(1600px) rotateY(0deg);
+    transform-origin: left center;
+  }
+  100% {
+    transform: perspective(1600px) rotateY(-110deg);
+    transform-origin: left center;
+  }
+}
+
+@keyframes ink-bleed {
+  from {
+    opacity: 0;
+    letter-spacing: 0.4em;
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    letter-spacing: 0.04em;
+    filter: blur(0);
+  }
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translateY(-12px) rotate(180deg);
+    opacity: 0.8;
+  }
+}
+
+@keyframes line-draw {
+  from {
+    stroke-dashoffset: var(--line-length, 200);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.anim-ink-bleed {
+  animation: ink-bleed var(--dur-slow) var(--ease-paper) both;
+}
+
+.anim-opening {
+  animation: book-opening 1100ms var(--ease-paper) forwards;
+  transform-origin: left center;
+}

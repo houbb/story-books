@@ -1,0 +1,46 @@
+/* ============================================================
+   Paper — the heart of the reading surface
+   ============================================================ */
+.paper {
+  background: var(--bg-paper);
+  color: var(--ink);
+  position: relative;
+  box-shadow:
+    inset 0 0 0 1px var(--border),
+    0 1px 0 rgba(255, 255, 255, 0.4) inset,
+    var(--shadow-deep);
+}
+
+.paper--soft::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at top left, rgba(255, 255, 255, 0.18), transparent 55%),
+    radial-gradient(ellipse at bottom right, rgba(0, 0, 0, 0.06), transparent 60%);
+  mix-blend-mode: soft-light;
+}
+
+.paper--aged {
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(255, 255, 255, 0.4), transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139, 107, 61, 0.07), transparent 60%),
+    var(--bg-paper);
+}
+
+.paper-edge {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.06);
+}
+
+[data-theme='night'] .paper {
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(200, 168, 120, 0.05), transparent 55%),
+    var(--bg-paper);
+}

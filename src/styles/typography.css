@@ -1,0 +1,119 @@
+/* ============================================================
+   Typography — editorial scale
+   ============================================================ */
+.display {
+  font-family: var(--font-serif-en);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1.05;
+}
+
+.title-cn {
+  font-family: var(--font-serif-cn);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.25;
+}
+
+.eyebrow {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.caption {
+  font-family: var(--font-serif-en);
+  font-style: italic;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.body-prose {
+  font-family: var(--font-serif-cn);
+  font-weight: 400;
+  line-height: 1.95;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+}
+
+.body-prose h1,
+.body-prose h2,
+.body-prose h3 {
+  font-family: var(--font-serif-cn);
+  color: var(--ink);
+  margin: 1.6em 0 0.7em;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+.body-prose h1 {
+  font-size: var(--text-lg);
+}
+.body-prose h2 {
+  font-size: var(--text-md);
+}
+.body-prose h3 {
+  font-size: var(--text-base);
+}
+.body-prose p {
+  margin: 0 0 1em;
+  text-indent: 2em;
+}
+.body-prose strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+.body-prose em {
+  font-style: italic;
+  color: var(--ink);
+}
+.body-prose blockquote {
+  margin: 1.5em 0;
+  padding: 0.4em 1.4em;
+  border-left: 2px solid var(--accent);
+  color: var(--ink);
+  font-style: italic;
+  background: rgba(139, 107, 61, 0.04);
+}
+.body-prose ul,
+.body-prose ol {
+  margin: 0 0 1em;
+  padding-left: 2.4em;
+}
+.body-prose li {
+  margin: 0.3em 0;
+}
+.body-prose hr {
+  border: none;
+  height: 1px;
+  background: var(--border);
+  margin: 2em auto;
+  width: 60%;
+}
+.body-prose code {
+  font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+  font-size: 0.88em;
+  padding: 0.12em 0.36em;
+  background: var(--bg-paper-deep);
+  border-radius: 4px;
+}
+.body-prose img {
+  display: block;
+  max-width: 100%;
+  margin: 1.6em auto;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+}
+.body-prose figure {
+  margin: 1.8em 0;
+  text-align: center;
+}
+.body-prose figcaption {
+  font-family: var(--font-serif-en);
+  font-style: italic;
+  font-size: var(--text-sm);
+  color: var(--muted);
+  margin-top: 0.6em;
+}
