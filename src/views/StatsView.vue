@@ -274,10 +274,42 @@ function rankLabel(idx: number) {
   .stats {
     padding: 24px 18px 64px;
   }
+  .stats__top,
+  .stats__ranking-head {
+    flex-wrap: wrap;
+    gap: 8px 12px;
+  }
+  .stats__top > *,
+  .stats__ranking-head > * {
+    min-width: 0;
+  }
+  .stats__hero {
+    padding-top: 28px;
+  }
+  .stats__hero-num {
+    max-width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px 10px;
+    font-size: clamp(48px, 18vw, 88px);
+    overflow-wrap: anywhere;
+  }
+  .stats__unit {
+    letter-spacing: 0.12em;
+  }
+  .stats__chips {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .stats__row {
-    grid-template-columns: 28px 1fr 60px;
+    min-width: 0;
+    grid-template-columns: 28px minmax(0, 1fr) 60px;
     grid-template-rows: auto auto;
     gap: 6px 12px;
+  }
+  .stats__title,
+  .stats__words {
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
   .stats__bar,
   .stats__mins {

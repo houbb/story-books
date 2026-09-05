@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import { onMounted, watch } from 'vue';
-import { useSettingsStore } from '@/stores/settings';
+import { useSettingsStore, applyThemeToDOM } from '@/stores/settings';
 import { useStoryStore } from '@/stores/story';
 import SearchFab from '@/components/SearchFab.vue';
 
 const settings = useSettingsStore();
 const story = useStoryStore();
 
+settings.initThemeListener();
+
 function applyDocumentState() {
   const root = document.documentElement;
-  root.dataset.theme = settings.theme;
+  applyThemeToDOM(settings.theme);
   root.dataset.cjkFont = settings.cjkFont;
   root.dataset.latinFont = settings.latinFont;
   root.dataset.fontSize = String(settings.fontSize);

@@ -167,9 +167,34 @@ function back() {
   color: var(--bg-paper);
 }
 @media (max-width: 900px) {
+  .map-view__top {
+    padding: 16px max(16px, env(safe-area-inset-left)) 16px max(16px, env(safe-area-inset-right));
+    gap: 8px;
+  }
+  .map-view__top > * {
+    min-width: 0;
+  }
+  .map-view__back {
+    letter-spacing: 0.08em;
+    overflow-wrap: anywhere;
+  }
   .map-view__stage {
-    grid-template-columns: 1fr;
-    grid-template-rows: 1fr 200px;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(220px, 1fr) minmax(180px, auto);
+    gap: 12px;
+    padding: 0 16px max(16px, env(safe-area-inset-bottom));
+  }
+  .map-view__canvas,
+  .map-view__panel {
+    min-width: 0;
+  }
+  .map-view__panel {
+    padding: 16px;
+    overflow-y: auto;
+  }
+  .map-view__title,
+  .map-view__desc {
+    overflow-wrap: anywhere;
   }
 }
 </style>

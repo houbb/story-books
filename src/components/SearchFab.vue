@@ -79,7 +79,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
   border-radius: var(--radius-sm);
 }
 @media (max-width: 540px) {
-  .search-fab__text {
+  .search-fab {
+    right: max(12px, env(safe-area-inset-right));
+    bottom: max(12px, env(safe-area-inset-bottom));
+    padding: 12px;
+  }
+  .search-fab__text,
+  .search-fab__hint {
     display: none;
   }
 }

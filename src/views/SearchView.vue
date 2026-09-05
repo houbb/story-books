@@ -244,8 +244,26 @@ function back() {
   .search {
     padding: 24px 18px 64px;
   }
+  .search__top {
+    flex-wrap: wrap;
+    gap: 8px 12px;
+  }
+  .search__top > * {
+    min-width: 0;
+  }
+  .search__top .caption {
+    flex-basis: 100%;
+  }
   .search__row {
-    grid-template-columns: 40px 1fr;
+    min-width: 0;
+    grid-template-columns: 40px minmax(0, 1fr);
+    padding: 16px;
+  }
+  .search__body,
+  .search__title,
+  .search__snippet {
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
   .search__occurrences {
     grid-column: 2;

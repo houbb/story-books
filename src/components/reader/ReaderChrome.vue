@@ -3,14 +3,58 @@ import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useBookStore } from '@/stores/book';
 import SettingsPanel from '@/components/reader/SettingsPanel.vue';
+import { bookmarkStorage } from '@/core/book/BookmarkStorage';
+import { webSpeechNarrator } from '@/core/narrator/Narrator';
+import { QuoteCardGenerator } from '@/core/share/QuoteCardGenerator';
 
-const props = defineProps<{ pageCount: number; musicPlaying: boolean }>();
+const props = withDefaults(defineProps<{
+  pageCount: number;
+  musicPlaying: boolean;
+  visible?: boolean;
+  storyId?: string | null;
+  storyTitle?: string;
+  pageTitle?: string;
+  pageSnippet?: string;
+  pageAnchor?: string;
+  sliceIndex?: number;
+  shareUrl?: string;
+  quote?: string;
+}>(), { visible: true, storyId: null, storyTitle: '', pageTitle: '', pageSnippet: '', pageAnchor: '', sliceIndex: 0, shareUrl: '', quote: '' });
 const emit = defineEmits<{
   (e: 'prev'): void;
   (e: 'next'): void;
   (e: 'exit'): void;
   (e: 'toggle-music'): void;
+  (e: 'share'): void;
+  (e: 'quote-card'): void;
 }>();
+
+const bookmarked = computed(() => props.storyId ? bookmarkStorage.has(props.storyId, book.currentPage, props.sliceIndex) : false);
+const speaking = ref(false);
+function toggleBookmark() {
+  if (!props.storyId) return;
+  const found = bookmarkStorage.list().find((item) => item.storyId === props.storyId && item.page === book.currentPage && item.sliceIndex === props.sliceIndex);
+  if (found) bookmarkStorage.remove(found.id);
+  else bookmarkStorage.add({ storyId: props.storyId, page: book.currentPage, sliceIndex: props.sliceIndex, anchor: props.pageAnchor, title: props.storyTitle || props.pageTitle, snippet: props.pageSnippet });
+}
+async function toggleNarration() {
+  if (speaking.value) { webSpeechNarrator.stop(); speaking.value = false; return; }
+  speaking.value = true;
+  await webSpeechNarrator.speak(props.quote || props.pageSnippet);
+  speaking.value = false;
+}
+async function share() {
+  emit('share');
+  const url = props.shareUrl || window.location.href;
+  if (navigator.share) await navigator.share({ title: props.storyTitle, url }).catch(() => undefined);
+  else {
+    try { await navigator.clipboard?.writeText(url); } catch { /* clipboard unavailable */ }
+  }
+}
+async function makeQuoteCard() {
+  emit('quote-card');
+  if (props.quote && props.storyTitle) await QuoteCardGenerator.downloadCard({ quote: props.quote, storyTitle: props.storyTitle });
+}
 
 const book = useBookStore();
 const router = useRouter();
@@ -34,7 +78,7 @@ function openStats() {
 </script>
 
 <template>
-  <div class="chrome">
+  <div class="chrome" :class="{ 'is-hidden': visible === false }">
     <header class="chrome__top">
       <button class="chrome__icon" :title="'退出 (Esc)'" @click="emit('exit')">
         <span>←</span>
@@ -49,10 +93,27 @@ function openStats() {
           <span class="chrome__music-bars" :class="{ 'is-playing': musicPlaying }"><i /><i /><i /></span>
           <span class="chrome__icon-label-text">{{ musicPlaying ? '配乐' : '静音' }}</span>
         </button>
+        <button class="chrome__icon chrome__icon--label" :disabled="!storyId" :title="bookmarked ? '取消书签' : '添加书签'" @click="toggleBookmark">
+          <span class="chrome__icon-glyph">{{ bookmarked ? '⚑' : '⚐' }}</span>
+          <span class="chrome__icon-label-text">书签</span>
+        </button>
+        <button v-if="storyId" class="chrome__icon chrome__icon--label" title="朗读当前页" @click="toggleNarration">
+          <span class="chrome__icon-glyph">{{ speaking ? '■' : '▶' }}</span>
+          <span class="chrome__icon-label-text">{{ speaking ? '停止' : '朗读' }}</span>
+        </button>
+        <button v-if="storyId" class="chrome__icon chrome__icon--label" title="分享此篇" @click="share">
+          <span class="chrome__icon-glyph">↗</span>
+          <span class="chrome__icon-label-text">分享</span>
+        </button>
+        <button v-if="quote && storyId" class="chrome__icon chrome__icon--label" title="生成金句卡片" @click="makeQuoteCard">
+          <span class="chrome__icon-glyph">▧</span>
+          <span class="chrome__icon-label-text">金句</span>
+        </button>
         <button class="chrome__icon chrome__icon--label" title="阅读偏好" @click="showSettings = !showSettings">
           <span class="chrome__icon-glyph">Aa</span>
           <span class="chrome__icon-label-text">设置</span>
         </button>
+
         <button class="chrome__icon chrome__icon--label" title="字数汇总" @click="openStats">
           <span class="chrome__icon-glyph">∑</span>
           <span class="chrome__icon-label-text">字数</span>
@@ -101,17 +162,26 @@ function openStats() {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  transition: opacity var(--dur-fast) var(--ease-out);
 }
 .chrome > * {
   pointer-events: auto;
+}
+.chrome.is-hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 .chrome__top,
 .chrome__bottom {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 28px;
+  padding: calc(18px + env(safe-area-inset-top)) 28px 18px;
   color: var(--muted);
+}
+.chrome__top > *,
+.chrome__bottom > * {
+  min-width: 0;
 }
 .chrome__top {
   background: linear-gradient(to bottom, var(--bg-base), transparent);
@@ -120,11 +190,15 @@ function openStats() {
   background: linear-gradient(to top, var(--bg-base), transparent);
 }
 .chrome__top-actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+  overflow: visible;
 }
 .chrome__brand {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-family: var(--font-serif-en);
   font-style: italic;
   font-size: 13px;
@@ -165,11 +239,13 @@ function openStats() {
 .chrome__bottom {
   gap: 32px;
 }
-.chrome__music-bars {
+.chrome__bottom {
+  padding-bottom: calc(18px + env(safe-area-inset-bottom));
+}
+.chrome__top-actions {
   display: flex;
   gap: 2px;
   align-items: center;
-  height: 14px;
 }
 .chrome__music-bars i {
   display: block;
@@ -210,7 +286,9 @@ function openStats() {
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  min-width: 220px;
+  min-width: 0;
+  flex: 1;
+  max-width: 420px;
 }
 .chrome__progress-bar {
   height: 1px;
@@ -257,6 +335,40 @@ function openStats() {
   opacity: 0;
 }
 @media (max-width: 540px) {
+  .chrome__top,
+  .chrome__bottom {
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+  .chrome__top {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: 4px 8px;
+  }
+  .chrome__brand {
+    align-self: center;
+  }
+  .chrome__top-actions {
+    grid-column: 1 / -1;
+    width: 100%;
+    max-width: none;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 2px;
+    row-gap: 4px;
+  }
+  .chrome__bottom {
+    gap: 8px;
+  }
+  .chrome__progress {
+    max-width: none;
+  }
+  .chrome__nav {
+    flex: 0 0 auto;
+    padding: 8px;
+  }
+
   .chrome__icon-label-text {
     display: none;
   }

@@ -31,7 +31,7 @@ pnpm preview      # 预览构建结果
 | 字数汇总 | `/#/stats` | Hero 大数字 · 分章 chip · 字数排行榜（可点击跳转） |
 | 全文检索 | `/#/search` | 标题 + 正文 + CJK bigram + latin token，⌘K 聚焦 |
 
-阅读偏好（`Aa` 按钮，或在阅读页右上角）支持：中文字体（霞鹜文楷 / 思源宋 / 系统宋）、英文字体（Cormorant / Inter / Georgia）、字号档位（S / M / L / XL），全部写入 `localStorage`，刷新不丢。
+阅读偏好（`Aa` 按钮，或在阅读页右上角）支持：主题（日间 / 夜间 / 自动跟随系统）、中文字体（霞鹜文楷 / 思源宋 / 系统宋）、英文字体（Cormorant / Inter / Georgia）、字号档位（S / M / L / XL），全部写入 `localStorage`，刷新不丢；开启系统“减弱动态效果”后，翻页和页面动画会自动降为静止。
 
 ## 写一个故事
 
@@ -53,13 +53,13 @@ order: 1
 ## 测试与验证
 
 ```bash
-pnpm test         # 16 个单元断言：parser / tree / paginator / markdown / word-count / stats / search
-pnpm test:e2e     # Playwright 真实浏览器流程：导航 / 主题 / 字数 / 检索 / 设置
+pnpm test         # 19 个单元断言：parser / tree / paginator / markdown / word-count / stats / search / bookmarks
+pnpm test:e2e     # Playwright 真实浏览器流程：桌面 + mobile-iphone + mobile-small 多分辨率
 pnpm typecheck    # vue-tsc 全量类型检查
 pnpm build        # 生产构建（含 404.html 与 /story-books/ base）
 ```
 
-E2E 默认调用系统安装的 Chrome（macOS 13 无法下载 playwright 自带 headless shell 时自动降级）。
+E2E 默认调用系统安装的 Chrome（macOS 13 无法下载 playwright 自带 headless shell 时自动降级）。包含 320px、390px 小屏幕移动端几何无裁剪断言，确保手机端阅读器工具栏、安全区与手势体验稳定。
 
 ## 设计原则
 

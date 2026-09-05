@@ -56,6 +56,9 @@ function gotoSearch() {
 function gotoSettings() {
   settingsPanel.value = true;
 }
+function gotoShelf() {
+  router.push('/shelf');
+}
 </script>
 
 <template>
@@ -65,9 +68,9 @@ function gotoSettings() {
     <header class="home__top">
       <span class="eyebrow">{{ bookTitle }}</span>
       <div class="home__top-actions">
-        <button class="home__icon" :aria-label="`切换到${theme === 'light' ? '夜间' : '日间'}模式`" @click="settings.toggleTheme()">
-          <span v-if="theme === 'light'">☾</span>
-          <span v-else>☼</span>
+        <button class="home__icon" :aria-label="theme === 'light' ? '切换到夜间模式' : theme === 'night' ? '切换到自动主题' : '切换到日间模式'" @click="settings.toggleTheme()">
+          <span v-if="theme === 'night'">☼</span>
+          <span v-else>☾</span>
         </button>
         <button class="home__icon" aria-label="进入全文检索" title="全文检索 (⌘K)" @click="gotoSearch">
           <span>⌕</span>
@@ -118,6 +121,12 @@ function gotoSettings() {
             <span class="home__shortcut-name">全文检索</span>
             <span class="home__shortcut-sub">Search · ⌘K</span>
           </button>
+          <button class="home__shortcut home__shortcut--shelf" @click="gotoShelf">
+            <span class="home__shortcut-icon">⚑</span>
+            <span class="home__shortcut-name">我的书房</span>
+            <span class="home__shortcut-sub">Shelf · 书签 / 进度</span>
+          </button>
+
         </nav>
       </div>
 
@@ -423,5 +432,53 @@ function gotoSettings() {
 }
 .home__error {
   color: #a33;
+}
+@media (max-width: 540px) {
+  .home {
+    padding: 20px 16px;
+    overflow-y: auto;
+  }
+  .home__top {
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .home__top-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .home__music {
+    margin-left: 0;
+  }
+  .home__stage {
+    gap: 28px;
+    padding: 24px 0;
+  }
+  .home__title {
+    font-size: clamp(40px, 13vw, 64px);
+    overflow-wrap: anywhere;
+  }
+  .home__subtitle {
+    letter-spacing: 0.16em;
+  }
+  .home__cta {
+    width: min(100%, 360px);
+    padding: 18px 24px;
+  }
+  .home__shortcuts {
+    width: 100%;
+    gap: 10px;
+  }
+  .home__shortcut {
+    flex: 1 1 140px;
+    min-width: 0;
+    padding: 14px;
+  }
+  .home__shortcut-sub {
+    overflow-wrap: anywhere;
+  }
+  .home__bottom {
+    gap: 12px;
+    flex-wrap: wrap;
+  }
 }
 </style>

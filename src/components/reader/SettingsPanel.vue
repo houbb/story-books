@@ -6,7 +6,7 @@
  * directly so any future preference migrates through one well-known seam.
  */
 import { useSettingsStore } from '@/stores/settings';
-import type { CjkFont, LatinFont } from '@/stores/settings';
+import type { CjkFont, LatinFont, ThemeMode } from '@/stores/settings';
 import { cjkFontFamily, latinFontFamily } from '@/styles/font-stacks';
 
 const settings = useSettingsStore();
@@ -21,6 +21,12 @@ const latinOptions: Array<{ value: LatinFont; label: string; sample: string }> =
   { value: 'cormorant', label: 'Cormorant', sample: 'Cormorant · editorial italic' },
   { value: 'inter', label: 'Inter', sample: 'Inter · clean modern' },
   { value: 'georgia', label: 'Georgia', sample: 'Georgia · sturdy screen' },
+];
+
+const themeOptions: Array<{ value: ThemeMode; label: string; description: string }> = [
+  { value: 'light', label: '日间', description: '温暖纸张' },
+  { value: 'night', label: '夜间', description: '低亮护眼' },
+  { value: 'auto', label: '自动', description: '跟随系统' },
 ];
 
 const fontSizes: Array<{ value: number; label: string }> = [
@@ -39,6 +45,23 @@ const emit = defineEmits<{ (e: 'close'): void }>();
       <span class="eyebrow">Reading Settings · 阅读偏好</span>
       <button class="settings__close" @click="emit('close')">✕</button>
     </header>
+
+    <section class="settings__section">
+      <p class="eyebrow">主题 · theme</p>
+      <div class="settings__seg settings__theme-seg">
+        <button
+          v-for="opt in themeOptions"
+          :key="opt.value"
+          class="settings__seg-btn"
+          :class="{ 'is-active': settings.theme === opt.value }"
+          :aria-pressed="settings.theme === opt.value"
+          @click="settings.setTheme(opt.value)"
+        >
+          <span class="settings__seg-letter">{{ opt.label }}</span>
+          <span class="settings__seg-sample">{{ opt.description }}</span>
+        </button>
+      </div>
+    </section>
 
     <section class="settings__section">
       <p class="eyebrow">字号 · font size</p>

@@ -148,7 +148,7 @@
 }
 .idx-item {
   display: grid;
-  grid-template-columns: 36px 1fr 60px;
+  grid-template-columns: 36px minmax(0, 1fr) 60px;
   align-items: baseline;
   padding: 8px 4px;
   cursor: pointer;
@@ -301,6 +301,17 @@
   font-size: 13px;
   color: var(--muted);
 }
+.content-page__head,
+.content-page__foot,
+.content-page__breadcrumb,
+.content-page__page-no,
+.content-page__nav {
+  min-width: 0;
+}
+.content-page__breadcrumb,
+.content-page__nav {
+  overflow-wrap: anywhere;
+}
 .content-page__body {
   flex: 1;
   overflow: hidden;
@@ -367,9 +378,24 @@
   background: var(--bg-paper-deep);
   border-radius: 4px;
 }
+.content-page__body code,
+.content-page__body pre,
+.content-page__body table {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.content-page__body pre {
+  overflow: hidden;
+  white-space: pre-wrap;
+}
+.content-page__body table {
+  display: block;
+  overflow: hidden;
+}
 .content-page__body img {
   display: block;
   max-width: 100%;
+  height: auto;
   margin: 1.6em auto;
   border-radius: 6px;
   box-shadow: var(--shadow);
@@ -450,6 +476,58 @@
   font-style: italic;
   font-size: 12px;
   color: var(--muted);
+}
+
+@media (max-width: 720px) {
+  .book-cover,
+  .story-cover,
+  .story-ending {
+    padding: 10% 8%;
+  }
+  .book-cover__eyebrow,
+  .book-cover__subtitle,
+  .story-cover__title,
+  .story-cover__subtitle,
+  .story-ending__title,
+  .story-ending__subtitle {
+    letter-spacing: 0.12em;
+    overflow-wrap: anywhere;
+  }
+  .book-index {
+    padding: 8% 6%;
+  }
+  .idx-item {
+    grid-template-columns: 28px minmax(0, 1fr) 44px;
+  }
+  .idx-item__title,
+  .idx-item__sub,
+  .idx-item__page {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .content-page {
+    padding: 6% 7% 5%;
+  }
+  .content-page__head,
+  .content-page__foot {
+    gap: 8px;
+  }
+  .content-page__body {
+    font-size: 14px;
+    letter-spacing: 0.02em;
+  }
+  .content-page__body ul,
+  .content-page__body ol {
+    padding-left: 1.6em;
+  }
+  .content-page__body blockquote {
+    padding-left: 0.8em;
+    padding-right: 0.4em;
+  }
+  .story-cover__excerpt {
+    max-width: 88%;
+    overflow-wrap: anywhere;
+  }
 }
 
 /* ---------------- Night theme ---------------- */

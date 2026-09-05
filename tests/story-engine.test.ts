@@ -1,11 +1,25 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { parseStory } from '@/core/story/StoryParser';
 import { buildTree, flattenStories } from '@/core/story/StoryTreeBuilder';
 import { BookPaginator } from '@/core/book/BookPaginator';
+import { ParagraphPageBreakStrategy } from '@/core/book/PageBreakStrategy';
+import { LocalStorageBookmarkStorage } from '@/core/book/BookmarkStorage';
 import { MarkdownRenderer } from '@/core/book/MarkdownRenderer';
 import { wordCounter, createWordCounterEngine } from '@/core/story/WordCounter';
 import { storyStatsProvider } from '@/core/story/StoryStats';
 import { storySearchEngine } from '@/core/story/StorySearchEngine';
+import { resolveTheme } from '@/stores/settings';
+
+describe('settings theme', () => {
+  it('keeps explicit themes and resolves auto from system preference', () => {
+    expect(resolveTheme('light')).toBe('light');
+    expect(resolveTheme('night')).toBe('night');
+    const originalWindow = globalThis.window;
+    vi.stubGlobal('window', { matchMedia: vi.fn(() => ({ matches: true })) });
+    expect(resolveTheme('auto')).toBe('night');
+    vi.stubGlobal('window', originalWindow);
+  });
+});
 
 describe('story parser', () => {
   it('combines frontmatter with filename defaults', () => {
@@ -32,20 +46,43 @@ describe('story tree', () => {
 });
 
 describe('book paginator', () => {
-  it('creates cover, index, chapter pairs, and ending', () => {
-    const stories = [parseStory('01-moon.md', '月'), parseStory('02-river.md', '河')];
-    const index = {
-      roots: stories,
-      byId: Object.fromEntries(stories.map((story) => [story.id, story])),
-      stories,
-      totalStories: stories.length,
-    };
-    const pages = new BookPaginator().paginate(index);
-    expect(pages.map((page) => page.type)).toEqual([
-      'cover', 'index', 'story-cover', 'content', 'story-cover', 'content', 'ending',
-    ]);
+  it('splits semantic blocks into ordered stable slices', () => {
+    const slices = new ParagraphPageBreakStrategy(8).split('<p>一二三四五六</p><p>七八九十</p><p>最后</p>');
+    expect(slices.length).toBe(2);
+    expect(slices.map((slice) => slice.sliceIndex)).toEqual([0, 1]);
+    expect(slices.every((slice) => slice.totalSlices === 2)).toBe(true);
+    expect(slices.map((slice) => slice.html).join('')).toContain('最后');
+  });
+
+  it('keeps later story pages after variable slice counts', () => {
+    const stories = [parseStory('01-long.md', `${'一'.repeat(12)}\n\n${'二'.repeat(12)}\n\n${'三'.repeat(12)}`), parseStory('02-short.md', '短')];
+    const index = { roots: stories, byId: Object.fromEntries(stories.map((story) => [story.id, story])), stories, totalStories: 2 };
+    const pages = new BookPaginator(new ParagraphPageBreakStrategy(10)).paginate(index);
+    expect(pages.find((page) => page.id === 'story-cover-02-short')?.pageNumber).toBeGreaterThan(4);
+    expect(new Set(pages.filter((page) => page.type === 'content').map((page) => page.id)).size).toBeGreaterThan(2);
   });
 });
+
+describe('bookmark storage', () => {
+  it('persists and deduplicates bookmarks by stable anchor', () => {
+    const storage = new LocalStorageBookmarkStorage();
+    const memory = new Map<string, string>();
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => memory.get(key) ?? null,
+      setItem: (key: string, value: string) => memory.set(key, value),
+      removeItem: (key: string) => memory.delete(key),
+      clear: () => memory.clear(),
+    });
+    localStorage.clear();
+    const input = { storyId: 'story', page: 3, sliceIndex: 1, anchor: 'content-story-1', title: '故事', snippet: '一段话' };
+    const first = storage.add(input);
+    expect(storage.add(input).id).toBe(first.id);
+    expect(storage.has('story', 3, 1)).toBe(true);
+    storage.remove(first.id);
+    expect(storage.list()).toEqual([]);
+  });
+});
+
 
 describe('markdown renderer', () => {
   it('renders markdown and removes duplicate leading title', () => {

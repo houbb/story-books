@@ -5,7 +5,7 @@
 
 import { defineStore } from 'pinia';
 
-export type ThemeMode = 'light' | 'night';
+export type ThemeMode = 'light' | 'night' | 'auto';
 
 export type CjkFont = 'wenkai' | 'noto' | 'songti';
 export type LatinFont = 'cormorant' | 'inter' | 'georgia';
@@ -44,7 +44,7 @@ function load(): SettingsState {
 
 function defaults(): SettingsState {
   return {
-    theme: 'light',
+    theme: 'auto',
     fontSize: 15,
     cjkFont: 'wenkai',
     latinFont: 'cormorant',
@@ -73,16 +73,42 @@ function save(state: SettingsState) {
   }
 }
 
+export function resolveTheme(theme: ThemeMode): 'light' | 'night' {
+  if (theme !== 'auto') return theme;
+  if (typeof window !== 'undefined' && window.matchMedia) {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'night' : 'light';
+  }
+  return 'light';
+}
+
+export function applyThemeToDOM(theme: ThemeMode) {
+  if (typeof document === 'undefined') return;
+  document.documentElement.dataset.theme = resolveTheme(theme);
+}
+
 export const useSettingsStore = defineStore('settings', {
   state: (): SettingsState => load(),
   actions: {
+    initThemeListener() {
+      applyThemeToDOM(this.theme);
+      if (typeof window !== 'undefined' && window.matchMedia) {
+        const media = window.matchMedia('(prefers-color-scheme: dark)');
+        const listener = () => {
+          if (this.theme === 'auto') applyThemeToDOM('auto');
+        };
+        if (media.addEventListener) media.addEventListener('change', listener);
+        else media.addListener?.(listener);
+      }
+    },
     setTheme(theme: ThemeMode) {
       this.theme = theme;
-      document.documentElement.dataset.theme = theme;
+      applyThemeToDOM(theme);
       save(this.$state);
     },
     toggleTheme() {
-      this.setTheme(this.theme === 'light' ? 'night' : 'light');
+      if (this.theme === 'light') this.setTheme('night');
+      else if (this.theme === 'night') this.setTheme('auto');
+      else this.setTheme('light');
     },
     setFontSize(size: number) {
       this.fontSize = Math.min(20, Math.max(13, size));

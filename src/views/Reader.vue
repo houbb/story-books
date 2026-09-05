@@ -29,8 +29,13 @@ const { index } = storeToRefs(story);
 const flipEl = ref<HTMLElement | null>(null);
 const stageEl = ref<HTMLElement | null>(null);
 const ready = ref(false);
+const chromeVisible = ref(true);
 let flip: PageFlip | null = null;
 let resizeObserver: ResizeObserver | null = null;
+let rebuildTimer: number | null = null;
+let mountGeneration = 0;
+let pointerStart: { x: number; y: number } | null = null;
+let pointerDragged = false;
 
 const pages = computed(() => (index.value ? bookPaginator.paginate(index.value) : []));
 
@@ -71,7 +76,9 @@ function syncCurrent(p: number) {
 }
 
 async function mountFlip() {
+  const generation = ++mountGeneration;
   if (!flipEl.value || pages.value.length === 0) return;
+  if (resizeObserver) resizeObserver.disconnect();
   if (flip) {
     flip.destroy();
     flip = null;
@@ -116,6 +123,7 @@ async function mountFlip() {
     })
   );
 
+  if (generation !== mountGeneration || !flipEl.value) return;
   flipEl.value.innerHTML = htmls.join('');
 
   const pageEls = Array.from(flipEl.value.children) as HTMLElement[];
@@ -128,7 +136,7 @@ async function mountFlip() {
     showCover: true,
     autoSize: false,
     usePortrait: isMobile,
-    flippingTime: isMobile ? 600 : 900,
+    flippingTime: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 0 : isMobile ? 600 : 900,
     maxShadowOpacity: 0.55,
     minWidth: 280,
     maxWidth: 1400,
@@ -157,7 +165,7 @@ async function mountFlip() {
   const start = hasRequestedPage
     ? Math.min(requestedPage, tpls.length - 1)
     : hasRequestedStory
-      ? Math.min(storyIdx * 2 + 2, tpls.length - 1)
+      ? Math.max(0, tpls.findIndex((page) => page.storyId === requestedStory))
       : resume && resume.storyId && index.value?.byId[resume.storyId] && resume.page >= 0
         ? Math.min(resume.page, tpls.length - 1)
         : 0;
@@ -171,6 +179,62 @@ async function mountFlip() {
     resizeObserver.observe(stageEl.value);
   }
 }
+
+function onStagePointerDown(event: PointerEvent) {
+  if (event.pointerType === 'mouse' && event.button !== 0) return;
+  pointerStart = { x: event.clientX, y: event.clientY };
+  pointerDragged = false;
+}
+
+function onStagePointerMove(event: PointerEvent) {
+  if (!pointerStart) return;
+  if (Math.hypot(event.clientX - pointerStart.x, event.clientY - pointerStart.y) > 12) {
+    pointerDragged = true;
+  }
+}
+
+function onStagePointerUp(event: PointerEvent) {
+  if (!pointerStart || pointerDragged || !stageEl.value) {
+    pointerStart = null;
+    return;
+  }
+  const rect = stageEl.value.getBoundingClientRect();
+  const ratio = (event.clientX - rect.left) / rect.width;
+  if (ratio <= 0.25) prev();
+  else if (ratio >= 0.75) next();
+  else chromeVisible.value = !chromeVisible.value;
+  pointerStart = null;
+}
+
+function onStagePointerCancel() {
+  pointerStart = null;
+  pointerDragged = false;
+}
+
+function onStageClick(event: MouseEvent) {
+  if (event.detail === 0) return;
+  // Pointer events own the tap behavior; this handler is retained for keyboard users.
+  if (!stageEl.value) return;
+  const rect = stageEl.value.getBoundingClientRect();
+  const ratio = (event.clientX - rect.left) / rect.width;
+  if (ratio <= 0.25) prev();
+  else if (ratio >= 0.75) next();
+  else chromeVisible.value = !chromeVisible.value;
+}
+
+const currentPage = computed(() => pages.value[book.currentPage]);
+const currentStory = computed(() => {
+  const page = currentPage.value;
+  return page?.storyId ? index.value?.byId[page.storyId] : undefined;
+});
+const currentSnippet = computed(() => {
+  const html = currentPage.value?.sliceHtml ?? '';
+  return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160);
+});
+const shareUrl = computed(() => {
+  const storyId = currentPage.value?.storyId;
+  return storyId ? new URL(router.resolve({ name: 'read', query: { story: storyId } }).href, window.location.origin).href : '';
+});
 
 function next() {
   flip?.flipNext();
@@ -193,7 +257,9 @@ function onKey(e: KeyboardEvent) {
     e.preventDefault();
     prev();
   } else if (e.key === 'Escape') {
-    if (book.showStoryMap) book.setShowStoryMap(false);
+    if (!chromeVisible.value) {
+      chromeVisible.value = true;
+    } else if (book.showStoryMap) book.setShowStoryMap(false);
     else exit();
   } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
     e.preventDefault();
@@ -207,6 +273,22 @@ function onKey(e: KeyboardEvent) {
     flip?.turnToPage(pages.value.length - 1);
   }
 }
+
+watch(
+  () => [settings.fontSize, settings.cjkFont, settings.latinFont],
+  () => {
+    if (!index.value || !flipEl.value) return;
+    if (rebuildTimer !== null) window.clearTimeout(rebuildTimer);
+    const currentId = pages.value[book.currentPage]?.id;
+    rebuildTimer = window.setTimeout(() => {
+      rebuildTimer = null;
+      void mountFlip().then(() => {
+        const target = currentId ? pages.value.findIndex((page) => page.id === currentId) : -1;
+        if (flip && target >= 0) flip.turnToPage(target);
+      });
+    }, 100);
+  }
+);
 
 watch(index, () => {
   if (index.value && flipEl.value) mountFlip();
@@ -223,6 +305,8 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKey);
   window.removeEventListener('storybook:goto', onGoto);
   resizeObserver?.disconnect();
+  if (rebuildTimer !== null) window.clearTimeout(rebuildTimer);
+  mountGeneration++;
   flip?.destroy();
   flip = null;
 });
@@ -231,16 +315,27 @@ onBeforeUnmount(() => {
 <template>
   <div class="reader">
     <div ref="stageEl" class="reader__stage paper-grain">
-      <div ref="flipEl" class="reader__flip" :class="{ 'is-ready': ready }" />
+      <div ref="flipEl" class="reader__flip" :class="{ 'is-ready': ready }" @pointerdown="onStagePointerDown" @pointermove="onStagePointerMove" @pointerup="onStagePointerUp" @pointercancel="onStagePointerCancel" />
     </div>
 
     <ReaderChrome
       :page-count="pages.length"
       :music-playing="musicPlaying"
+      :visible="chromeVisible"
+      :story-id="currentStory?.id"
+      :story-title="currentStory?.title"
+      :page-title="currentPage?.title"
+      :page-snippet="currentSnippet"
+      :page-anchor="currentPage?.id"
+      :slice-index="currentPage?.sliceIndex"
+      :share-url="shareUrl"
+      :quote="currentSnippet"
       @prev="prev"
       @next="next"
       @exit="exit"
       @toggle-music="toggleMusic"
+      @share="() => undefined"
+      @quote-card="() => undefined"
     />
   </div>
 </template>
@@ -249,14 +344,21 @@ onBeforeUnmount(() => {
 .reader {
   position: fixed;
   inset: 0;
+  min-width: 0;
+  min-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 .reader__stage {
   position: relative;
   width: min(96vw, 1400px);
   height: min(92vh, 920px);
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
@@ -268,8 +370,20 @@ onBeforeUnmount(() => {
 .reader__flip {
   width: 100%;
   height: 100%;
+  min-width: 0;
+  max-width: 100%;
+  touch-action: pan-y;
 }
 .reader__flip.is-ready {
   animation: fade-up var(--dur-slow) var(--ease-out) both;
+}
+@media (max-width: 720px) {
+  .reader__stage {
+    width: min(100%, calc(100vw - 16px));
+    height: min(100%, calc(100dvh - 16px));
+    height: min(100%, calc(100vh - 16px));
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow);
+  }
 }
 </style>

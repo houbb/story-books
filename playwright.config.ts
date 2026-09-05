@@ -27,5 +27,21 @@ export default defineConfig({
         },
       },
     },
+    {
+      name: 'mobile-iphone',
+      use: {
+        ...devices['Pixel 5'],
+        viewport: { width: 390, height: 844 },
+        launchOptions: { channel: 'chrome' },
+      },
+    },
+    {
+      name: 'mobile-small',
+      use: {
+        ...devices['Pixel 5'],
+        viewport: { width: 320, height: 568 },
+        launchOptions: { channel: 'chrome' },
+      },
+    },
   ],
 });
