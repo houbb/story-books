@@ -53,7 +53,7 @@ order: 1
 ## 测试与验证
 
 ```bash
-pnpm test         # 19 个单元断言：parser / tree / paginator / markdown / word-count / stats / search / bookmarks
+pnpm test         # 20 个单元断言：parser / tree / paginator (多页自然切片与页码对齐) / markdown / word-count / stats / search / bookmarks
 pnpm test:e2e     # Playwright 真实浏览器流程：桌面 + mobile-iphone + mobile-small 多分辨率
 pnpm typecheck    # vue-tsc 全量类型检查
 pnpm build        # 生产构建（含 404.html 与 /story-books/ base）

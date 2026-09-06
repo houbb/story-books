@@ -15,7 +15,7 @@ const emit = defineEmits<{
 
 const story = useStoryStore();
 const book = useBookStore();
-const { fitView, setCenter } = useVueFlow();
+const { fitView, setCenter, zoomIn, zoomOut } = useVueFlow();
 
 interface PositionedNode extends Node {
   id: string;
@@ -57,15 +57,67 @@ const layout = computed<{ nodes: PositionedNode[]; edges: Edge[] }>(() => {
   const nodes: PositionedNode[] = [];
   const edges: Edge[] = [];
 
-  // Layout: groups fan out as horizontal lanes, stories inside each group
-  // stack vertically. Groups themselves are gathered into a single row so
-  // empty space stays compact.
-  const columnWidth = 280;
-  const rowHeight = 160;
-  const groupHeaderHeight = 90;
+  const columnWidth = 260;
+  const rowHeight = 150;
+  const groupHeaderHeight = 85;
 
-  // Sort groups + root stories together by their first-leaf order so the
-  // visual reading flow matches the book's TOC.
+  // Check if stories are mostly root stories (flat structure like 34 root chapters)
+  const isMostlyFlat = roots.every((r) => !isStoryGroup(r));
+
+  if (isMostlyFlat) {
+    // Elegant grid layout for flat stories: 5 columns per row, serpentine reading flow
+    const cols = 5;
+    const sorted = [...roots].sort((a, b) => a.order - b.order);
+
+    sorted.forEach((root, i) => {
+      const row = Math.floor(i / cols);
+      const isReversedRow = row % 2 === 1;
+      const col = isReversedRow ? cols - 1 - (i % cols) : i % cols;
+      const x = col * columnWidth;
+      const y = row * rowHeight;
+      const isCurrent = root.id === currentId;
+      const stat = stats.value.get(root.id);
+
+      nodes.push({
+        id: `s:${root.id}`,
+        type: 'default',
+        label: root.title,
+        position: { x, y },
+        data: {
+          kind: 'story',
+          visited: visited.has(root.id),
+          isCurrent,
+          order: root.order,
+          words: stat?.words,
+          minutes: stat?.minutes,
+          parentTitle: 'Chapter',
+        },
+        sourcePosition: isReversedRow ? Position.Left : Position.Right,
+        targetPosition: isReversedRow ? Position.Right : Position.Left,
+      });
+
+      if (i > 0) {
+        const prev = sorted[i - 1];
+        edges.push({
+          id: `e:flow:${prev.id}->${root.id}`,
+          source: `s:${prev.id}`,
+          target: `s:${root.id}`,
+          animated: isCurrent,
+          type: 'smoothstep',
+          style: {
+            stroke: isCurrent ? 'var(--accent)' : 'var(--accent-soft)',
+            strokeWidth: isCurrent ? 2 : 1,
+            strokeDasharray: '4 4',
+            opacity: isCurrent ? 1 : 0.65,
+          },
+        });
+      }
+    });
+
+    return { nodes, edges };
+  }
+
+  // Hierarchical layout with folder groups
   const sorted = [...roots].sort((a, b) => {
     const aOrder = isStoryGroup(a) ? a.children[0]?.order ?? 999 : a.order;
     const bOrder = isStoryGroup(b) ? b.children[0]?.order ?? 999 : b.order;
@@ -141,7 +193,7 @@ const layout = computed<{ nodes: PositionedNode[]; edges: Edge[] }>(() => {
     }
   });
 
-  // Reading-order arcs: connect each story to the next so the book "flows".
+  // Reading-order flow
   const flatIds: string[] = [];
   sorted.forEach((r) => {
     if (isStoryGroup(r)) r.children.forEach((c) => flatIds.push(c.id));
@@ -174,6 +226,10 @@ function fmt(n?: number) {
   return String(n);
 }
 
+function handleResetView() {
+  fitView({ duration: 500, padding: 0.15 });
+}
+
 const lastFitId = ref<string | null>(null);
 
 watch(
@@ -184,11 +240,11 @@ watch(
     await nextTick();
     const nodeEl = document.querySelector(`[data-id="s:${id}"]`) as HTMLElement | null;
     if (nodeEl) {
-      const x = Number(nodeEl.style.transform.match(/translate\(([-\d.]+)px/)?.[1] ?? 0) + 130;
-      const y = Number(nodeEl.style.transform.match(/translate\(([-\d.]+)px, ([-\d.]+)px/)?.[2] ?? 0) + 50;
+      const x = Number(nodeEl.style.transform.match(/translate\(([-\d.]+)px/)?.[1] ?? 0) + 120;
+      const y = Number(nodeEl.style.transform.match(/translate\(([-\d.]+)px, ([-\d.]+)px/)?.[2] ?? 0) + 45;
       setCenter(x, y, { zoom: 0.95, duration: 600 });
     } else {
-      fitView({ duration: 400, padding: 0.2 });
+      fitView({ duration: 400, padding: 0.15 });
     }
   },
   { immediate: true }
@@ -200,9 +256,9 @@ watch(
     <VueFlow
       :nodes="layout.nodes"
       :edges="layout.edges"
-      :default-viewport="{ x: 60, y: 60, zoom: 0.85 }"
-      :min-zoom="0.35"
-      :max-zoom="1.6"
+      :default-viewport="{ x: 40, y: 40, zoom: 0.85 }"
+      :min-zoom="0.2"
+      :max-zoom="2"
       :nodes-draggable="false"
       :nodes-connectable="false"
       :elements-selectable="true"
@@ -234,13 +290,54 @@ watch(
         </div>
       </template>
     </VueFlow>
+
+    <!-- Map controls toolbar -->
+    <div class="map-controls">
+      <button class="map-ctrl-btn" title="放大" @click="zoomIn()">+</button>
+      <button class="map-ctrl-btn" title="缩小" @click="zoomOut()">−</button>
+      <button class="map-ctrl-btn map-ctrl-btn--reset" title="适应全图" @click="handleResetView">
+        <span>⊙</span>
+      </button>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .story-map {
+  position: relative;
   width: 100%;
   height: 100%;
+}
+.map-controls {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 10;
+}
+.map-ctrl-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  background: var(--bg-paper);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  color: var(--ink-soft);
+  font-size: 16px;
+  font-weight: 500;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.map-ctrl-btn:hover {
+  background: var(--bg-secondary);
+  color: var(--accent);
+}
+.map-ctrl-btn--reset {
+  font-size: 18px;
 }
 :deep(.vue-flow) {
   background: transparent;
@@ -261,12 +358,13 @@ watch(
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  padding: 16px 20px 14px;
+  padding: 14px 18px 12px;
   border-radius: var(--radius-md);
   background: var(--bg-paper);
   border: 1px solid var(--border);
   box-shadow: var(--shadow);
-  min-width: 168px;
+  min-width: 156px;
+  max-width: 200px;
   transition: transform var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
 }
 .sn:hover {
@@ -289,61 +387,43 @@ watch(
 .sn--group .sn__label {
   font-family: var(--font-serif-en);
   font-size: 13px;
-  letter-spacing: 0.32em;
-  text-transform: uppercase;
+  letter-spacing: 0.22em;
   color: var(--muted);
+  text-transform: uppercase;
 }
-.sn--story .sn__label {
-  font-family: var(--font-serif-cn);
-  font-size: 17px;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  color: var(--ink);
+.sn--story.is-current {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+.sn--story.is-current .sn__dot {
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.sn--story.is-visited:not(.is-current) .sn__dot {
+  background: var(--muted);
 }
 .sn__order {
   font-family: var(--font-serif-en);
-  font-style: italic;
   font-size: 11px;
-  letter-spacing: 0.32em;
+  letter-spacing: 0.18em;
   color: var(--muted);
-  margin-top: 4px;
+}
+.sn__label {
+  font-family: var(--font-serif-cjk);
+  font-size: 14px;
+  color: var(--ink);
+  text-align: center;
+  line-height: 1.4;
+  word-break: break-word;
 }
 .sn__meta {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 6px;
-  font-family: var(--font-serif-en);
-  font-style: italic;
   font-size: 11px;
   color: var(--muted);
-  letter-spacing: 0.18em;
 }
 .sn__sep {
   opacity: 0.5;
-}
-.is-current {
-  border-color: var(--accent);
-  box-shadow: var(--shadow-deep);
-  background: var(--bg-paper-deep);
-}
-.is-current .sn__dot {
-  background: var(--accent);
-  box-shadow: 0 0 0 5px rgba(139, 107, 61, 0.22);
-}
-.is-current .sn__label {
-  color: var(--accent);
-}
-.is-visited .sn__dot {
-  background: var(--ink-soft);
-}
-:deep(.vue-flow__edge-path) {
-  stroke: var(--accent-soft);
-  stroke-width: 1.4;
-  fill: none;
-}
-:deep(.vue-flow__edge.is-current .vue-flow__edge-path),
-:deep(.vue-flow__edge[data-id^="e:g:"] .vue-flow__edge-path) {
-  stroke: var(--accent);
-  stroke-width: 1.8;
 }
 </style>

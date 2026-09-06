@@ -93,7 +93,7 @@ async function mountFlip() {
         return renderPageHtml(BookCover, { page: tpl });
       }
       if (tpl.type === 'index') {
-        return renderPageHtml(BookIndex, { pages: tpls, index: index.value });
+        return renderPageHtml(BookIndex, { pages: tpls, index: index.value, page: tpl });
       }
       if (tpl.type === 'story-cover') {
         const next = tpls[i + 1];
@@ -334,6 +334,7 @@ onBeforeUnmount(() => {
       @next="next"
       @exit="exit"
       @toggle-music="toggleMusic"
+      @toggle-collapse="chromeVisible = !chromeVisible"
       @share="() => undefined"
       @quote-card="() => undefined"
     />
