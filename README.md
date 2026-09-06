@@ -26,12 +26,14 @@ pnpm preview      # 预览构建结果
 | 入口 | 路径 | 用途 |
 |---|---|---|
 | 封面 / 主菜单 | `/` | 进入阅读、跳到地图、字数汇总、检索 |
-| 翻书阅读 | `/#/read` | page-flip 翻页体验，键盘 ← / → / Space / Home / End |
+| 翻书阅读 | `/#/read` | 桌面端翻书体验，键盘 ← / → / Space / Home / End；手机端一屏一页滑动翻页 |
 | 故事地图 | `/#/map` | 节点化的章节结构，悬停当前章节，⌘M 打开 |
 | 字数汇总 | `/#/stats` | Hero 大数字 · 分章 chip · 字数排行榜（可点击跳转） |
 | 全文检索 | `/#/search` | 标题 + 正文 + CJK bigram + latin token，⌘K 聚焦 |
 
 阅读偏好（`Aa` 按钮，或在阅读页右上角）支持：主题（日间 / 夜间 / 自动跟随系统）、中文字体（霞鹜文楷 / 思源宋 / 系统宋）、英文字体（Cormorant / Inter / Georgia）、字号档位（S / M / L / XL），全部写入 `localStorage`，刷新不丢；开启系统“减弱动态效果”后，翻页和页面动画会自动降为静止。
+
+手机端阅读采用「一屏一页」滑动模式：每一页占满整屏宽度，左右滑动在封面、目录、章节封面、正文与尾声之间流畅切换，每页内容完整呈现，不再有翻书动效下的双页占位与内容遮挡；单页内容超出屏幕时可在页内上下滚动，横向手势始终用于翻页。桌面端保留真实的翻书动画。
 
 ## 写一个故事
 
@@ -53,13 +55,13 @@ order: 1
 ## 测试与验证
 
 ```bash
-pnpm test         # 20 个单元断言：parser / tree / paginator (多页自然切片与页码对齐) / markdown / word-count / stats / search / bookmarks
+pnpm test         # 26 个单元断言：parser / tree / paginator (多页自然切片与页码对齐) / markdown / word-count / stats / search / bookmarks / 移动端一屏一页
 pnpm test:e2e     # Playwright 真实浏览器流程：桌面 + mobile-iphone + mobile-small 多分辨率
 pnpm typecheck    # vue-tsc 全量类型检查
 pnpm build        # 生产构建（含 404.html 与 /story-books/ base）
 ```
 
-E2E 默认调用系统安装的 Chrome（macOS 13 无法下载 playwright 自带 headless shell 时自动降级）。包含 320px、390px 小屏幕移动端几何无裁剪断言，确保手机端阅读器工具栏、安全区与手势体验稳定。
+E2E 默认调用系统安装的 Chrome（macOS 13 无法下载 playwright 自带 headless shell 时自动降级）。包含 320px、390px 小屏幕移动端几何无裁剪断言、一屏一页滑动断点与页码同步校验，确保手机端阅读器工具栏、安全区与手势体验稳定。
 
 ## 设计原则
 
@@ -75,10 +77,10 @@ E2E 默认调用系统安装的 Chrome（macOS 13 无法下载 playwright 自带
 src/
 ├── core/
 │   ├── story/        Story Engine — Loader/Parser/TreeBuilder/Index/WordCounter/StoryStats/StorySearchEngine
-│   └── book/         Book Engine — Paginator/PageFlip/MarkdownRenderer/PageRenderer
+│   └── book/         Book Engine — Paginator/PageFlip/FlipPageList/MarkdownRenderer/PageRenderer
 ├── stores/           Pinia 状态（settings 含字体偏好、story、book）
 ├── components/
-│   ├── book/         翻书页组件（封面、目录、章节、末页）
+│   ├── book/         翻书页组件（封面、目录、章节、末页）+ 移动端滑动容器
 │   ├── reader/       阅读器外壳（ReaderChrome / SettingsPanel）
 │   ├── story/        StoryMap 节点视图
 │   └── SearchFab     全局 ⌘K 入口

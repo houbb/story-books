@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, nextTick, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { PageFlip } from 'page-flip';
 import { useStoryStore } from '@/stores/story';
 import { useBookStore } from '@/stores/book';
 import { useSettingsStore } from '@/stores/settings';
-import { bookPaginator } from '@/core/book/BookPaginator';
+import { bookPaginator, type BookPageTemplate } from '@/core/book/BookPaginator';
 import { markdownRenderer } from '@/core/book/MarkdownRenderer';
 import { renderPageHtml } from '@/core/book/PageRenderer';
+import type { StoryMeta } from '@/core/story/types';
 import ReaderChrome from '@/components/reader/ReaderChrome.vue';
 import { useAmbientAudio } from '@/composables/useAmbientAudio';
 import BookCover from '@/components/book/BookCover.vue';
@@ -16,7 +17,11 @@ import BookIndex from '@/components/book/BookIndex.vue';
 import StoryCover from '@/components/book/StoryCover.vue';
 import ContentPage from '@/components/book/ContentPage.vue';
 import StoryEnding from '@/components/book/StoryEnding.vue';
+import FlipPageList from '@/components/book/FlipPageList.vue';
 import '@/styles/page.css';
+
+/** 移动端判定宽度：与 page-flip 的 usePortrait 断点保持一致 */
+const MOBILE_BREAKPOINT = 720;
 
 const router = useRouter();
 const route = useRoute();
@@ -36,6 +41,13 @@ let rebuildTimer: number | null = null;
 let mountGeneration = 0;
 let pointerStart: { x: number; y: number } | null = null;
 let pointerDragged = false;
+let desktopPointerEl: HTMLElement | null = null;
+/** 移动端滑动模式持有的状态 */
+const isMobileMode = ref(false);
+const listEl = ref<InstanceType<typeof FlipPageList> | null>(null);
+const listPages = ref<BookPageTemplate[]>([]);
+/** 进入移动端模式时记录的起始页：仅用于模板初始渲染 */
+const listStartPage = ref(0);
 
 const pages = computed(() => (index.value ? bookPaginator.paginate(index.value) : []));
 
@@ -55,13 +67,23 @@ function exit() {
 function computeSize() {
   if (!stageEl.value) return { width: 600, height: 800, isMobile: false };
   const rect = stageEl.value.getBoundingClientRect();
-  const isMobile = rect.width < 720;
+  const isMobile = rect.width < MOBILE_BREAKPOINT;
   const width = isMobile ? rect.width : Math.floor(rect.width / 2);
   const height = Math.floor(rect.height);
   return { width, height, isMobile };
 }
 
 function applySize() {
+  if (isMobileMode.value) {
+    // 移动端滑动模式：页面 100% 宽自适应，无需重建；
+    // 但折叠工具栏等尺寸变化可能影响 stage 宽高，这里做一次对齐修正。
+    const el = stageEl.value;
+    if (el && listEl.value) {
+      listEl.value.scrollToPage(book.currentPage);
+      listEl.value.syncFromScroll();
+    }
+    return;
+  }
   if (!flip) return;
   const { width, height, isMobile } = computeSize();
   flip.updateSize({ width, height });
@@ -84,7 +106,48 @@ async function mountFlip() {
     flip = null;
   }
   const { width, height, isMobile } = computeSize();
+
   const tpls = pages.value;
+  if (isMobile) {
+    // 移动端：一屏一页滑动模式，全部页面 100% 宽顺序排列。
+    const resume = settings.lastPosition;
+    const requestedPage = Number(route.query.page);
+    const requestedStory = typeof route.query.story === 'string' ? route.query.story : null;
+    const storyIdx =
+      requestedStory && index.value?.byId[requestedStory]
+        ? index.value.stories.findIndex((s) => s.id === requestedStory)
+        : -1;
+    const hasRequestedStory = storyIdx >= 0;
+    const hasRequestedPage = Number.isInteger(requestedPage) && requestedPage >= 0;
+    const start = hasRequestedPage
+      ? Math.min(requestedPage, tpls.length - 1)
+      : hasRequestedStory
+        ? Math.max(0, tpls.findIndex((page) => page.storyId === requestedStory))
+        : resume && resume.storyId && index.value?.byId[resume.storyId] && resume.page >= 0
+          ? Math.min(resume.page, tpls.length - 1)
+          : 0;
+    listPages.value = tpls;
+    listStartPage.value = start;
+    isMobileMode.value = true;
+    book.setPages(tpls);
+    book.setPhysicalCount(tpls.length);
+    await nextTick();
+    if (generation !== mountGeneration) return;
+    listEl.value?.scrollToPage(start);
+    syncCurrent(start);
+    book.open();
+    ready.value = true;
+    if (stageEl.value) {
+      resizeObserver = new ResizeObserver(() => applySize());
+      resizeObserver.observe(stageEl.value);
+    }
+    return;
+  }
+
+  // 桌面端：page-flip 翻书（双页），原有逻辑保持不变。
+  listStartPage.value = 0;
+  isMobileMode.value = false;
+  listPages.value = [];
 
   // Pre-render every page to HTML and inject it into the host container.
   const htmls = await Promise.all(
@@ -182,6 +245,7 @@ async function mountFlip() {
 
 function onStagePointerDown(event: PointerEvent) {
   if (event.pointerType === 'mouse' && event.button !== 0) return;
+  desktopPointerEl = stageEl.value ?? null;
   pointerStart = { x: event.clientX, y: event.clientY };
   pointerDragged = false;
 }
@@ -194,7 +258,8 @@ function onStagePointerMove(event: PointerEvent) {
 }
 
 function onStagePointerUp(event: PointerEvent) {
-  if (!pointerStart || pointerDragged || !stageEl.value) {
+  desktopPointerEl = null;
+  if (!pointerStart || pointerDragged || !stageEl.value || isMobileMode.value) {
     pointerStart = null;
     return;
   }
@@ -212,6 +277,7 @@ function onStagePointerCancel() {
 }
 
 function onStageClick(event: MouseEvent) {
+  if (isMobileMode.value || desktopPointerEl) return;
   if (event.detail === 0) return;
   // Pointer events own the tap behavior; this handler is retained for keyboard users.
   if (!stageEl.value) return;
@@ -236,16 +302,60 @@ const shareUrl = computed(() => {
   return storyId ? new URL(router.resolve({ name: 'read', query: { story: storyId } }).href, window.location.origin).href : '';
 });
 
+/** 移动端滑动模式：故事 cover 前的上一个/下一个故事 */
+function prevStory(storyId: string): StoryMeta | null {
+  const idx = index.value?.stories.findIndex((s) => s.id === storyId) ?? -1;
+  return idx > 0 ? (index.value?.stories[idx - 1] ?? null) : null;
+}
+
+function nextStory(storyId: string): StoryMeta | null {
+  const idx = index.value?.stories.findIndex((s) => s.id === storyId) ?? -1;
+  return idx >= 0 ? (index.value?.stories[idx + 1] ?? null) : null;
+}
+
+/** 移动端滑动模式：故事 cover 提示语的页码 —— 指向该故事第一页正文 */
+function coverNextPageNumber(storyId: string | undefined, fallback: number): number {
+  if (!storyId) return fallback;
+  const found = pages.value.findIndex(
+    (p) => p.type === 'content' && p.storyId === storyId
+  );
+  return found >= 0 ? found : fallback;
+}
+
 function next() {
+  if (isMobileMode.value) {
+    listEl.value?.scrollToPage(book.currentPage + 1, 'smooth');
+    return;
+  }
   flip?.flipNext();
 }
 function prev() {
+  if (isMobileMode.value) {
+    listEl.value?.scrollToPage(book.currentPage - 1, 'smooth');
+    return;
+  }
   flip?.flipPrev();
+}
+
+/** 移动端滑动模式：由 FlipPageList 驱动的逻辑页变化 */
+function onListChange(page: number) {
+  if (!isMobileMode.value) return;
+  syncCurrent(page);
+}
+
+function onListReachStart() {
+  book.setCurrent(0);
+}
+
+function onListReachEnd() {
+  book.setCurrent(pages.value.length - 1);
 }
 
 function onGoto(event: Event) {
   const page = Number((event as CustomEvent<{ page?: number }>).detail?.page);
-  if (Number.isInteger(page) && page >= 0) flip?.turnToPage(page);
+  if (!Number.isInteger(page) || page < 0) return;
+  if (isMobileMode.value) listEl.value?.scrollToPage(page, 'smooth');
+  else flip?.turnToPage(page);
 }
 
 function onKey(e: KeyboardEvent) {
@@ -268,9 +378,11 @@ function onKey(e: KeyboardEvent) {
     e.preventDefault();
     router.push('/map');
   } else if (e.key === 'Home') {
-    flip?.turnToPage(0);
+    if (isMobileMode.value) listEl.value?.scrollToPage(0);
+    else flip?.turnToPage(0);
   } else if (e.key === 'End') {
-    flip?.turnToPage(pages.value.length - 1);
+    if (isMobileMode.value) listEl.value?.scrollToPage(pages.value.length - 1);
+    else flip?.turnToPage(pages.value.length - 1);
   }
 }
 
@@ -284,6 +396,10 @@ watch(
       rebuildTimer = null;
       void mountFlip().then(() => {
         const target = currentId ? pages.value.findIndex((page) => page.id === currentId) : -1;
+        if (isMobileMode.value) {
+          if (target >= 0) listEl.value?.scrollToPage(target);
+          return;
+        }
         if (flip && target >= 0) flip.turnToPage(target);
       });
     }, 100);
@@ -309,13 +425,63 @@ onBeforeUnmount(() => {
   mountGeneration++;
   flip?.destroy();
   flip = null;
+  desktopPointerEl = null;
+  listEl.value = null;
 });
 </script>
 
 <template>
   <div class="reader">
     <div ref="stageEl" class="reader__stage paper-grain">
-      <div ref="flipEl" class="reader__flip" :class="{ 'is-ready': ready }" @pointerdown="onStagePointerDown" @pointermove="onStagePointerMove" @pointerup="onStagePointerUp" @pointercancel="onStagePointerCancel" />
+      <FlipPageList
+        v-if="isMobileMode"
+        ref="listEl"
+        :pages="listPages"
+        :start-page="listStartPage"
+        @change="onListChange"
+        @reach-start="onListReachStart"
+        @reach-end="onListReachEnd"
+      >
+        <template #page="{ page }">
+          <BookCover v-if="page.type === 'cover'" :page="page" class="book-page" />
+          <BookIndex
+            v-else-if="page.type === 'index'"
+            :pages="pages"
+            :index="index"
+            :page="page"
+            class="book-page"
+          />
+          <StoryCover
+            v-else-if="page.type === 'story-cover'"
+            :page="page"
+            :next-story="page.storyId ? index?.byId[page.storyId] : undefined"
+            :rendered="page.storyId ? rendered.get(page.storyId) : undefined"
+            :next-page-number="coverNextPageNumber(page.storyId, page.pageNumber)"
+            class="book-page"
+          />
+          <ContentPage
+            v-else-if="page.type === 'content'"
+            :page="page"
+            :story="page.storyId ? index?.byId[page.storyId] : undefined"
+            :html="page.storyId ? rendered.get(page.storyId)?.html ?? '' : ''"
+            :prev="page.storyId ? prevStory(page.storyId) : null"
+            :next="page.storyId ? nextStory(page.storyId) : null"
+            class="book-page"
+          />
+          <StoryEnding v-else :page="page" class="book-page" />
+        </template>
+      </FlipPageList>
+
+      <div
+        v-show="!isMobileMode"
+        ref="flipEl"
+        class="reader__flip"
+        :class="{ 'is-ready': ready }"
+        @pointerdown="onStagePointerDown"
+        @pointermove="onStagePointerMove"
+        @pointerup="onStagePointerUp"
+        @pointercancel="onStagePointerCancel"
+      />
     </div>
 
     <ReaderChrome

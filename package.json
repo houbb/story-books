@@ -1,6 +1,6 @@
 {
   "name": "storybook-engine",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "private": true,
   "type": "module",
   "description": "A Digital Storybook / Interactive Story Atlas — Markdown as source, Story Tree as structure, Book as reader.",
