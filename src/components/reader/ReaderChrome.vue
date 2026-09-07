@@ -497,8 +497,9 @@ onBeforeUnmount(() => {
   background: linear-gradient(to bottom, var(--bg-base) 60%, transparent);
 }
 .chrome__bottom {
-  background: linear-gradient(to top, var(--bg-base) 60%, transparent);
-  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  background: linear-gradient(to top, var(--bg-base) 20%, transparent);
+  padding-top: 8px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
   gap: 24px;
 }
 .chrome__top-actions {

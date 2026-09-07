@@ -172,9 +172,9 @@ export class BookPaginator {
         isChapterStart: true,
       });
 
-      // Split story HTML into slices to prevent page overflow clipping
+      // Split story HTML into sequential physical pages
       const rendered = markdownRenderer.render(s);
-      const slices: PageSlice[] = this.pageBreaker.split(rendered.html, options?.maxCharsPerPage);
+      const slices = this.pageBreaker.split(rendered.html, options?.maxCharsPerPage);
 
       slices.forEach((slice, idx) => {
         pages.push({

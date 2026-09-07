@@ -43,7 +43,8 @@ const charsPerPage = computed(() => {
   const baseSize = 15;
   const currentSize = settings.fontSize || baseSize;
   const factor = Math.max(0.7, Math.min(1.3, (baseSize / currentSize) ** 1.2));
-  return Math.round(520 * factor);
+  // 300 字符当量：每页 14~16 行，满而不溢，自然分页
+  return Math.round(300 * factor);
 });
 
 const pages = computed(() =>
@@ -330,9 +331,9 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  /* 顶部预留工具栏避让空间，底部预留 76px 彻底杜绝遮挡 */
+  /* 顶部预留工具栏避让空间，底部预留 92px，完全避开底部翻页控件与渐变 */
   padding: calc(64px + env(safe-area-inset-top)) 24px
-    calc(76px + env(safe-area-inset-bottom)) 24px;
+    calc(92px + env(safe-area-inset-bottom)) 24px;
   box-sizing: border-box;
 }
 .reader__stage {

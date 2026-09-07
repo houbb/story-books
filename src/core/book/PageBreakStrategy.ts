@@ -34,10 +34,16 @@ export interface PageBreakStrategy {
  * 采用自然适度的页面容量（默认 520 字符），让书页内容饱满充实，
  * 配合 CSS 原生 column-fill 与 overflow 控制，提供自然、简明、优雅的分页体验。
  */
+/**
+ * ParagraphPageBreakStrategy — 自然语义分片策略。
+ *
+ * 按照顶级 HTML 块（<p>, <blockquote>, <ul>, <ol>, <h3>, <h2>）进行自然分切，
+ * 采用 300 字符基准容量，使每一页内容充实舒适，并且严格在页脚横线上方收笔，杜绝任何遮挡。
+ */
 export class ParagraphPageBreakStrategy implements PageBreakStrategy {
   private defaultMaxChars: number;
 
-  constructor(defaultMaxChars = 520) {
+  constructor(defaultMaxChars = 300) {
     this.defaultMaxChars = defaultMaxChars;
   }
 
@@ -47,7 +53,6 @@ export class ParagraphPageBreakStrategy implements PageBreakStrategy {
       return [{ html: '', sliceIndex: 0, totalSlices: 1, approximateWords: 0 }];
     }
 
-    // Match top-level HTML blocks
     const blockRegex = /<(p|blockquote|ul|ol|h[1-6]|hr|pre|table)[^>]*>[\s\S]*?<\/\1>|<hr\s*\/?>/gi;
     const blocks: string[] = [];
     let lastIndex = 0;
@@ -82,14 +87,16 @@ export class ParagraphPageBreakStrategy implements PageBreakStrategy {
 
       for (const part of blockParts) {
         const partLength = part.replace(/<[^>]+>/g, '').length;
-        // 当累积内容超过单页自然容量且已有内容时，自然翻入下一页
-        if (currentLength + partLength > pageLimit && currentLength > 0) {
+        // 段落边距折算：每一个独立段落额外占约 14 字符的垂直行高空间
+        const partCost = partLength + 14;
+
+        if (currentLength + partCost > pageLimit && currentLength > 0) {
           pages.push(currentChunk);
           currentChunk = part;
-          currentLength = partLength;
+          currentLength = partCost;
         } else {
           currentChunk += (currentChunk ? '\n' : '') + part;
-          currentLength += partLength;
+          currentLength += partCost;
         }
       }
     }

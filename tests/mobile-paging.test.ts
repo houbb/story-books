@@ -100,7 +100,7 @@ describe('mobile one-page-per-screen (一屏一页) layout contract', () => {
     expect(contentPages.length).toBeGreaterThan(0);
     for (const page of contentPages) {
       expect(typeof page.sliceHtml).toBe('string');
-      expect(page.sliceHtml.length).toBeGreaterThan(0);
+      expect(page.sliceHtml!.length).toBeGreaterThan(0);
       expect(page.totalSlices ?? 1).toBeGreaterThan(0);
     }
   });
