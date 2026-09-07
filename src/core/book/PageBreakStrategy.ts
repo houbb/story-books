@@ -87,16 +87,15 @@ export class ParagraphPageBreakStrategy implements PageBreakStrategy {
 
       for (const part of blockParts) {
         const partLength = part.replace(/<[^>]+>/g, '').length;
-        // 段落边距折算：每一个独立段落额外占约 14 字符的垂直行高空间
-        const partCost = partLength + 14;
 
-        if (currentLength + partCost > pageLimit && currentLength > 0) {
+        // 精确遵循纯文本字符容量累加契约，不引入额外魔法加权
+        if (currentLength + partLength > pageLimit && currentLength > 0) {
           pages.push(currentChunk);
           currentChunk = part;
-          currentLength = partCost;
+          currentLength = partLength;
         } else {
           currentChunk += (currentChunk ? '\n' : '') + part;
-          currentLength += partCost;
+          currentLength += partLength;
         }
       }
     }

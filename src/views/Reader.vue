@@ -43,8 +43,8 @@ const charsPerPage = computed(() => {
   const baseSize = 15;
   const currentSize = settings.fontSize || baseSize;
   const factor = Math.max(0.7, Math.min(1.3, (baseSize / currentSize) ** 1.2));
-  // 300 字符当量：每页 14~16 行，满而不溢，自然分页
-  return Math.round(300 * factor);
+  // 280 纯文本字符：既保证段落充沛饱满，又在 footer 细线之上留足安全边距
+  return Math.round(280 * factor);
 });
 
 const pages = computed(() =>
