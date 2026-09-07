@@ -60,7 +60,7 @@ function syncFromScroll() {
 }
 
 function onScroll() {
-  // 单页内部（长篇溢出的纵向区域）滚动时，横向 scrollLeft 不变，直接跳过，避免误触发翻页。
+  // 横向滑动切换整页
   const el = scrollerEl.value;
   if (!el || Math.abs(el.scrollLeft - current.value * el.clientWidth) < el.clientWidth * 0.5) return;
   syncFromScroll();
@@ -158,15 +158,13 @@ defineExpose({
   min-width: 0;
   min-height: 0;
   scroll-snap-align: start;
-  /* 单页内超出一屏的内容（长章节）纵向滚动可达，横向手势仍归翻页容器 */
-  overflow-x: hidden;
-  overflow-y: auto;
+  /* 移动端一屏一页自然分页，杜绝上下滚动条，保持与 Web 端一致的无滚动翻页体验 */
+  overflow: hidden;
   overscroll-behavior-x: contain;
   -webkit-overflow-scrolling: touch;
 }
 .flip-list__page :deep(.book-page) {
-  height: auto;
-  min-height: 100%;
+  height: 100%;
 }
 /* 需要锁定某一页时（例如沉浸模式下预览），禁止滚动与吸附跳动 */
 .flip-list--static {

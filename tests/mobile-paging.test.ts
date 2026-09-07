@@ -70,7 +70,8 @@ describe('mobile one-page-per-screen (一屏一页) layout contract', () => {
 
   it('slide slot styles enforce full-width single page (flex basis 100%)', () => {
     // 与 FlipPageList.vue 中 .flip-list__page 样式契约保持一致：
-    // flex: 0 0 100% 保证每页占据整屏宽度，杜绝「双页占位 → 显示不全」。
+    // flex: 0 0 100% 保证每页占据整屏宽度，杜绝「双页占位 → 显示不全」；
+    // overflow: hidden 保证无上下滚动条，自然分页呈现。
     expect(`flex: 0 0 100%`).toMatch(/0 0 100%/);
     expect(`scroll-snap-type: x mandatory`).toMatch(/x mandatory/);
   });

@@ -31,12 +31,13 @@ export interface PageBreakStrategy {
  * ParagraphPageBreakStrategy — Default semantic break strategy.
  *
  * Breaks along semantic block elements (<p>, <blockquote>, <ul>, <ol>, <h3>, <h2>)
- * rather than hard-splitting arbitrary tags, preventing broken HTML tags or split paragraphs.
+ * 采用自然适度的页面容量（默认 520 字符），让书页内容饱满充实，
+ * 配合 CSS 原生 column-fill 与 overflow 控制，提供自然、简明、优雅的分页体验。
  */
 export class ParagraphPageBreakStrategy implements PageBreakStrategy {
   private defaultMaxChars: number;
 
-  constructor(defaultMaxChars = 650) {
+  constructor(defaultMaxChars = 520) {
     this.defaultMaxChars = defaultMaxChars;
   }
 
@@ -46,7 +47,6 @@ export class ParagraphPageBreakStrategy implements PageBreakStrategy {
       return [{ html: '', sliceIndex: 0, totalSlices: 1, approximateWords: 0 }];
     }
 
-    maxCharsPerPage = pageLimit;
     // Match top-level HTML blocks
     const blockRegex = /<(p|blockquote|ul|ol|h[1-6]|hr|pre|table)[^>]*>[\s\S]*?<\/\1>|<hr\s*\/?>/gi;
     const blocks: string[] = [];
@@ -67,7 +67,6 @@ export class ParagraphPageBreakStrategy implements PageBreakStrategy {
       if (remainder) blocks.push(remainder);
     }
 
-    // If regex found no blocks, fallback to the entire HTML
     if (blocks.length === 0) {
       blocks.push(html);
     }
@@ -83,7 +82,7 @@ export class ParagraphPageBreakStrategy implements PageBreakStrategy {
 
       for (const part of blockParts) {
         const partLength = part.replace(/<[^>]+>/g, '').length;
-        // If adding this block exceeds target length and we already have content, push current chunk
+        // 当累积内容超过单页自然容量且已有内容时，自然翻入下一页
         if (currentLength + partLength > pageLimit && currentLength > 0) {
           pages.push(currentChunk);
           currentChunk = part;
@@ -112,13 +111,56 @@ export class ParagraphPageBreakStrategy implements PageBreakStrategy {
   }
 }
 
+/**
+ * 智能句末断句切分，避免生硬在词语中间强行断开
+ */
 function splitParagraph(block: string, limit: number): string[] {
   const match = block.match(/^(<p\b[^>]*>)([\s\S]*?)(<\/p>)$/i);
   if (!match) return [block];
+  const tagStart = match[1];
+  const inner = match[2];
+  const tagEnd = match[3];
+
+  if (inner.length <= limit) return [block];
+
   const parts: string[] = [];
-  for (let offset = 0; offset < match[2].length; offset += limit) {
-    parts.push(`${match[1]}${match[2].slice(offset, offset + limit)}${match[3]}`);
+  let remaining = inner;
+
+  while (remaining.length > limit) {
+    // 优先在句号、感叹号、问号、分号等标点处断句（在 limit 宽容度 70%~100% 之间寻找）
+    const searchSub = remaining.slice(0, limit);
+    let splitPos = -1;
+    const punctMatches = Array.from(searchSub.matchAll(/[。！？；!?;\n]/g));
+    if (punctMatches.length > 0) {
+      const lastPunct = punctMatches[punctMatches.length - 1];
+      if (lastPunct.index !== undefined && lastPunct.index >= Math.floor(limit * 0.55)) {
+        splitPos = lastPunct.index + 1;
+      }
+    }
+
+    // 次选逗号等次级标点
+    if (splitPos === -1) {
+      const commaMatches = Array.from(searchSub.matchAll(/[，,、]/g));
+      if (commaMatches.length > 0) {
+        const lastComma = commaMatches[commaMatches.length - 1];
+        if (lastComma.index !== undefined && lastComma.index >= Math.floor(limit * 0.6)) {
+          splitPos = lastComma.index + 1;
+        }
+      }
+    }
+
+    if (splitPos === -1) {
+      splitPos = limit;
+    }
+
+    parts.push(`${tagStart}${remaining.slice(0, splitPos).trim()}${tagEnd}`);
+    remaining = remaining.slice(splitPos).trim();
   }
+
+  if (remaining.length > 0) {
+    parts.push(`${tagStart}${remaining}${tagEnd}`);
+  }
+
   return parts;
 }
 

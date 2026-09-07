@@ -46,6 +46,11 @@ export interface BookPageTemplate {
   tocSlice?: TocPageSlice;
 }
 
+export interface BookPaginationOptions {
+  /** 可选覆盖单页最大字符容量（例如根据字号放大/缩小动态调整） */
+  maxCharsPerPage?: number;
+}
+
 export class BookPaginator {
   private pageBreaker: PageBreakStrategy;
   private tocStrategy: TocPaginationStrategy;
@@ -66,7 +71,7 @@ export class BookPaginator {
     this.tocStrategy = strategy;
   }
 
-  paginate(index: StoryIndex): BookPageTemplate[] {
+  paginate(index: StoryIndex, options?: BookPaginationOptions): BookPageTemplate[] {
     const pages: BookPageTemplate[] = [];
 
     // 0 — book cover (uses index.md frontmatter if present)
@@ -125,7 +130,7 @@ export class BookPaginator {
     for (const s of index.stories) {
       storyPageMap.set(s.id, currentStoryPageOffset);
       const rendered = markdownRenderer.render(s);
-      const slices = this.pageBreaker.split(rendered.html);
+      const slices = this.pageBreaker.split(rendered.html, options?.maxCharsPerPage);
       // 1 for story-cover + slices.length content pages
       currentStoryPageOffset += 1 + slices.length;
     }
@@ -169,7 +174,7 @@ export class BookPaginator {
 
       // Split story HTML into slices to prevent page overflow clipping
       const rendered = markdownRenderer.render(s);
-      const slices: PageSlice[] = this.pageBreaker.split(rendered.html);
+      const slices: PageSlice[] = this.pageBreaker.split(rendered.html, options?.maxCharsPerPage);
 
       slices.forEach((slice, idx) => {
         pages.push({
@@ -179,7 +184,7 @@ export class BookPaginator {
           title: s.title,
           pageNumber: pages.length,
           sliceIndex: idx,
-          totalSlices: slice.totalSlices,
+          totalSlices: slices.length,
           sliceHtml: slice.html,
         });
       });
@@ -201,8 +206,8 @@ export class BookPaginator {
   }
 
   /** Locate the story represented by a logical page template. */
-  storyForPage(index: StoryIndex, pageNumber: number): StoryMeta | undefined {
-    return index.byId[this.paginate(index)[pageNumber]?.storyId ?? ''];
+  storyForPage(index: StoryIndex, pageNumber: number, options?: BookPaginationOptions): StoryMeta | undefined {
+    return index.byId[this.paginate(index, options)[pageNumber]?.storyId ?? ''];
   }
 }
 
