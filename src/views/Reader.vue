@@ -230,11 +230,23 @@ watch(index, () => {
 });
 
 function onWheel(e: WheelEvent) {
-  if (Math.abs(e.deltaY) < 15 && Math.abs(e.deltaX) < 15) return;
-  if (e.deltaY > 20 || e.deltaX > 20) {
-    next();
-  } else if (e.deltaY < -20 || e.deltaX < -20) {
-    prev();
+  // 如果事件发生在可滚动的正文区域内部，优先供正文垂直滚动，严禁触发切页
+  const target = e.target as HTMLElement | null;
+  const scrollableBody = target?.closest('.content-page__body') as HTMLElement | null;
+  if (scrollableBody) {
+    // 当正文还有滚动余地时，完全交由原生上下滚动处理
+    const canScrollUp = scrollableBody.scrollTop > 0;
+    const canScrollDown =
+      scrollableBody.scrollTop + scrollableBody.clientHeight < scrollableBody.scrollHeight - 1;
+    if ((e.deltaY > 0 && canScrollDown) || (e.deltaY < 0 && canScrollUp)) {
+      return;
+    }
+  }
+
+  // 仅在明确进行水平横向扫动（如触控板左右轻扫），或已到顶/底且大幅横向滚动时触发翻页
+  if (Math.abs(e.deltaX) > Math.abs(e.deltaY) && Math.abs(e.deltaX) > 30) {
+    if (e.deltaX > 30) next();
+    else if (e.deltaX < -30) prev();
   }
 }
 

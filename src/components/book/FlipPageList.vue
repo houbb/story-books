@@ -146,7 +146,7 @@ defineExpose({
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  touch-action: pan-x pan-y;
+  touch-action: pan-x;
 }
 .flip-list::-webkit-scrollbar {
   display: none;
@@ -158,7 +158,7 @@ defineExpose({
   min-width: 0;
   min-height: 0;
   scroll-snap-align: start;
-  /* 移动端一屏一页自然分页，杜绝上下滚动条，保持与 Web 端一致的无滚动翻页体验 */
+  /* 每页整屏展示，内部高度 100% */
   overflow: hidden;
   overscroll-behavior-x: contain;
   -webkit-overflow-scrolling: touch;

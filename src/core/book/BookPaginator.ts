@@ -129,10 +129,8 @@ export class BookPaginator {
 
     for (const s of index.stories) {
       storyPageMap.set(s.id, currentStoryPageOffset);
-      const rendered = markdownRenderer.render(s);
-      const slices = this.pageBreaker.split(rendered.html, options?.maxCharsPerPage);
-      // 1 for story-cover + slices.length content pages
-      currentStoryPageOffset += 1 + slices.length;
+      // 每个故事固定 2 页：1 页 story-cover + 1 页完整 content（内部垂直滚动）
+      currentStoryPageOffset += 2;
     }
 
     // 4. Build exact TocItems with correct target physical page numbers
@@ -172,21 +170,17 @@ export class BookPaginator {
         isChapterStart: true,
       });
 
-      // Split story HTML into sequential physical pages
+      // 每一篇文章作为一个完整的独立内容页面，内部支持垂直滚动
       const rendered = markdownRenderer.render(s);
-      const slices = this.pageBreaker.split(rendered.html, options?.maxCharsPerPage);
-
-      slices.forEach((slice, idx) => {
-        pages.push({
-          id: `content-${s.id}-${idx}`,
-          type: 'content',
-          storyId: s.id,
-          title: s.title,
-          pageNumber: pages.length,
-          sliceIndex: idx,
-          totalSlices: slices.length,
-          sliceHtml: slice.html,
-        });
+      pages.push({
+        id: `content-${s.id}`,
+        type: 'content',
+        storyId: s.id,
+        title: s.title,
+        pageNumber: pages.length,
+        sliceIndex: 0,
+        totalSlices: 1,
+        sliceHtml: rendered.html,
       });
     });
 

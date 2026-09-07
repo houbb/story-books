@@ -87,21 +87,20 @@ describe('mobile one-page-per-screen (一屏一页) layout contract', () => {
     const cover = pages.find((p) => p.type === 'story-cover');
     expect(cover).toBeDefined();
     expect(cover!.storyId).toBe('01-forest/01-moon');
-    // 移动端 cover 提示语页码指向该故事第一页正文
+    // 移动端 cover 提示语页码指向该故事正文
     const firstContent = pages.find(
       (p) => p.type === 'content' && p.storyId === cover!.storyId
     );
     expect(firstContent).toBeDefined();
-    expect(firstContent!.pageNumber).toBeGreaterThan(cover!.pageNumber);
+    expect(firstContent!.pageNumber).toBe(cover!.pageNumber + 1);
   });
 
   it('mobile content pages keep the same story html slice contract', () => {
     const contentPages = pages.filter((p) => p.type === 'content');
-    expect(contentPages.length).toBeGreaterThan(0);
+    expect(contentPages.length).toBe(2);
     for (const page of contentPages) {
       expect(typeof page.sliceHtml).toBe('string');
       expect(page.sliceHtml!.length).toBeGreaterThan(0);
-      expect(page.totalSlices ?? 1).toBeGreaterThan(0);
     }
   });
 });

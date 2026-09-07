@@ -356,7 +356,7 @@
 
 /* ---------------- Content ---------------- */
 .content-page {
-  padding: 3% 5% 4%;
+  padding: 24px 32px 20px;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -399,13 +399,34 @@
 .content-page__body {
   flex: 1;
   min-height: 0;
-  overflow: hidden;
+  /* 垂直自然滚动条，100% 完整浏览全文 */
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
   font-family: var(--font-serif-cn);
   font-size: 15px;
-  line-height: 1.8;
+  line-height: 1.85;
   letter-spacing: 0.04em;
   color: var(--ink-soft);
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+  padding-right: 6px;
+}
+
+.content-page__body::-webkit-scrollbar {
+  width: 5px;
+}
+
+.content-page__body::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.content-page__body::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
 }
 
 .content-page__body h1,
